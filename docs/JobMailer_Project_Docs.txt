@@ -1,0 +1,615 @@
+JOB MAILER — PROJECT DOCUMENTATION
+Generated from docs/*.md
+Generated at: 2025-12-17T05:14:34.833Z
+======================================================================
+
+======================================================================
+FILE: 01_TECHNICAL_DOC.md
+======================================================================
+Job Mailer — Technical Documentation
+1) What this project is
+Job Mailer is a Node.js automation tool + local web UI that helps send job application emails reliably and repeatedly without re-sending to the same recipient.
+
+It supports three sending modes:
+- UI single send: fill a form, attach a resume (optional), and send.
+- UI bulk send: upload Excel (.xlsx) or paste a list of emails and send to many.
+- Automation mode: read data/recipients.csv, send to recipients not yet sent, and log results. This can run on a schedule and also auto-send when new rows are added.
+
+It also includes:
+- HR Finder: discover HR/Talent emails for a company domain (Hunter / Apollo) with auto domain detection.
+- Defaults management: save SMTP settings, default subject/body, and a default resume via the UI.
+- ATS score + optimization helper: score resume text vs JD and produce an “optimized” downloadable PDF.
+
+---
+2) Tech stack
+- Runtime: Node.js
+- Backend: Express + Multer (uploads) + Nodemailer (SMTP) + XLSX (Excel I/O)
+- Automation: node-cron (schedule), chokidar (file watcher), csv-parse (CSV parsing)
+- Frontend: static HTML/CSS/vanilla JS served by Express
+
+Key dependency confirmation: Nodemailer is used via backend/src/mailer.js.
+
+---
+3) Repository structure (important folders/files)
+- Backend (core): backend/src/*
+  - index.js: starts watcher + cron schedule
+  - send.js: sends pending recipients from CSV using sent.json as idempotency store
+  - watcher.js: watches data/recipients.csv and sends newly added emails
+  - scheduler.js: cron scheduler
+  - mailer.js: SMTP transport creation + email send
+  - template.js: default email template builder
+  - ui-server.js: Express server for UI + API (send, bulk, HR, settings, ATS)
+  - recipients.js: robust CSV parsing + validation
+  - sent-log.js: idempotency and status tracking in JSON
+  - excel-log.js: append/update sent.xlsx log
+  - utils.js: atomic file writes + helpers
+
+- Frontend: frontend/public/*
+  - index.html: main UI (tabs: Send, HR Finder, Defaults)
+  - app.js: UI behaviors + API calls
+  - styles.css: UI styling
+  - login.html: login page (if auth enabled)
+
+- Data directory: data/* (project state)
+  - recipients.csv (expected): list of recipients for automation mode
+  - sent.json (created): idempotency + last status by email
+  - sent.xlsx (created/updated): downloadable Excel log of sending
+  - ui-settings.json: saved UI defaults (smtp/subject/body/etc)
+  - default-resume.pdf: default resume uploaded via UI
+  - companies.json: saved company names for the HR Finder dropdown
+
+---
+4) Configuration (.env)
+Configuration is loaded from:
+- .env (preferred), else
+- env.example (fallback)
+
+Main environment variables (names only; don’t hard-code secrets in git):
+SMTP / sender
+- SMTP_HOST, SMTP_PORT, SMTP_SECURE
+- SMTP_USER, SMTP_PASS
+- FROM_EMAIL, FROM_NAME
+- RESUME_PATH
+Automation
+- SCHEDULE_CRON, TIMEZONE
+- DELAY_MS_BETWEEN_EMAILS
+- DRY_RUN
+UI
+- UI_AUTH_USER, UI_AUTH_PASS (optional; enables login gate)
+- SENT_XLSX_PATH (where to write the Excel log)
+- SUBJECT (default subject)
+HR Finder
+- HUNTER_API_KEY
+- APOLLO_API_KEY (+ optional APOLLO_BASE_URL, APOLLO_ENDPOINT)
+- APOLLO_REVEAL_PHONE_NUMBER
+
+---
+5) Runtime modes (how to run)
+Defined in package.json scripts:
+- npm run start → runs backend/src/index.js (watcher + cron)
+- npm run send:now → runs backend/src/send-pending.js (one-shot send)
+- npm run watch → runs backend/src/watch-and-send.js (watcher only)
+- npm run ui → runs backend/src/ui-server.js (web UI + API)
+
+---
+6) Email sending architecture (core logic)
+6.1 Transporter creation + SMTP reliability
+backend/src/mailer.js:
+- Validates required SMTP config.
+- Creates a Nodemailer transport and calls verify().
+- If the config uses 587 + STARTTLS and the error looks like network reachability, it retries once using a fallback 465 + SSL configuration.
+
+This is a real-world reliability improvement because some networks block outgoing SMTP submission ports.
+6.2 Email build + signature rules
+Two ways content is produced:
+
+1) Default template (backend/src/template.js):
+- Reads default body from data/ui-settings.json (if present).
+- Adds a signature (if the body does not already contain one).
+- Builds both text and html.
+
+2) UI “override body” path (backend/src/ui-server.js):
+- If a custom body is provided, it builds a simple HTML wrapper and adds signature only if missing.
+6.3 Attachments
+- Attach resume from either:
+  - uploaded file (UI), or
+  - default resume path (UI settings), or
+  - RESUME_PATH from env
+- Error if resume path doesn’t exist (CLI mode)
+
+---
+7) Idempotency + logging (avoid re-sending)
+7.1 JSON log for idempotency
+backend/src/sent-log.js maintains data/sent.json keyed by email:
+- status: "sent" | "error"
+- timestamps (sentAt / errorAt)
+- messageId, response, source (cron/watch/manual)
+
+The “pending” list is computed by: recipients.csv minus emails already marked as sent.
+7.2 Excel log
+backend/src/excel-log.js appends rows to data/sent.xlsx with columns:
+- email, name, subject, error
+
+It also normalizes old headers (backward compatible).
+
+---
+8) Automation mode (cron + watcher)
+8.1 Cron schedule
+backend/src/scheduler.js:
+- Validates SCHEDULE_CRON.
+- Schedules ticks in TIMEZONE.
+- On tick, calls sendPending({source: "cron"}).
+8.2 Watcher
+backend/src/watcher.js:
+- Uses chokidar to watch data/recipients.csv.
+- Debounces changes (400ms).
+- Sends only newly added emails that are not already sent.
+
+---
+9) Web UI server (Express)
+backend/src/ui-server.js is a separate runtime mode for interactive usage.
+9.1 Auth model
+- If UI_AUTH_USER and UI_AUTH_PASS are set, the UI becomes protected.
+- Simple cookie session (jm_sid) stored in-memory with 12h TTL.
+
+Trade-off: in-memory sessions reset on server restart (acceptable for local tool).
+9.2 Key API endpoints (high level)
+- Auth: /api/login, /api/logout
+- Settings: /api/settings, /api/settings/resume
+- Sending: /api/send, /api/send-bulk, /api/send-list
+- Downloads: /api/template.xlsx, /api/sent.xlsx
+- HR Finder: /api/provider-status, /api/hr-lookup
+- Company dropdown: /api/company-names, /api/company-suggest
+- ATS: /api/ats-score, /api/ats-optimize, /api/ats-optimized.pdf
+
+---
+10) HR Finder (Hunter / Apollo)
+/api/hr-lookup:
+- Input: company name and/or domain, provider.
+- If domain not provided, the server tries to resolve a domain using Clearbit autocomplete.
+- Then:
+  - Hunter: uses Hunter Domain Search and filters recruiting roles; falls back to all emails if none match.
+  - Apollo: uses Apollo mixed people search, maps contact fields, optionally reveals phone.
+
+Additionally:
+- Company names are saved to data/companies.json and shown in a UI dropdown.
+- Domain resolution retries simplified queries (e.g., stripping Pvt/Ltd) so dropdown selections behave like typing.
+
+---
+11) ATS scoring + optimized PDF generation
+In backend/src/ui-server.js:
+- Accepts JD + resume (pdf/docx upload or pasted text).
+- Extracts text (uses system pdftotext or unzip for docx).
+- Computes a heuristic ATS score:
+  - keyword match portion
+  - structure score (sections, bullets, numbers)
+- “Optimize” iteratively appends suggestions and can generate a downloadable PDF.
+
+Important operational note:
+- PDF merging uses pdfunite if available.
+
+---
+12) Security & privacy notes (what to say clearly)
+- Never commit real SMTP passwords / API keys. Use .env and keep it out of git.
+- The UI auth is local / single-user design. It’s not intended as a hardened multi-tenant system.
+- Email content + recipients are sensitive. Logging is local (data/*).
+
+---
+13) Extension ideas (future improvements)
+- Replace SMTP with email API provider (Resend/SendGrid/Mailgun) for better deliverability and fewer network blocks.
+- Persist sessions to disk (or disable auth in fully local mode).
+- Add retries/backoff per recipient + per-provider rate limits.
+- Add structured logging and a UI “history” view from sent.xlsx.
+- Add tests for CSV/Excel parsing and HR mapping.
+
+======================================================================
+FILE: 02_FLOW_DOC.md
+======================================================================
+Job Mailer — Flow Documentation (End-to-End)
+A) Big picture
+This project has two major execution paths:
+
+1) Automation (headless)
+- Watch data/recipients.csv for new entries → send immediately
+- Also run a scheduled job (cron) to send all pending recipients
+
+2) Interactive UI (web)
+- Send a single email
+- Send bulk emails (Excel or pasted list)
+- Manage defaults (smtp/subject/body/default resume)
+- HR Finder (discover recruiting emails)
+- ATS score/optimize resume vs JD
+
+---
+B) Data flow (persistent files)
+- data/recipients.csv → source list for automation mode
+- data/sent.json → idempotency + status by email
+- data/sent.xlsx → append-only-ish record of sends for reporting/download
+- data/ui-settings.json → UI-saved defaults
+- data/default-resume.pdf → default resume used when UI send has no upload
+- data/companies.json → HR Finder company dropdown list
+
+---
+C) Automation mode flows
+C1) Cron scheduled send
+Trigger: cron tick based on SCHEDULE_CRON and TIMEZONE
+
+Sequence:
+1. backend/src/index.js starts scheduler.
+2. scheduler tick → calls sendPending({source:"cron"})
+3. sendPending:
+   - reads recipients from data/recipients.csv
+   - reads status from data/sent.json
+   - filters pending recipients
+   - creates SMTP transporter (verify + fallback 465)
+   - sends each email with delay
+   - logs:
+     - JSON (sent.json) mark sent/error
+     - Excel (sent.xlsx) append row
+
+Output:
+- recipients get emails
+- logs updated
+C2) Watcher immediate send
+Trigger: file change in data/recipients.csv
+
+Sequence:
+1. watcher.js loads recipients and keeps a set of known emails.
+2. On change, it reloads recipients.
+3. It computes “added emails”.
+4. It filters out those already marked sent in sent.json.
+5. It sends only the new ones.
+6. It logs status to sent.json.
+
+Why this is useful:
+- You can paste/add new recipients in the CSV and the system automatically sends without waiting for cron.
+
+---
+D) UI flows
+D1) Login gate (optional)
+If UI_AUTH_USER and UI_AUTH_PASS exist:
+- user must login at /login
+- server sets jm_sid cookie
+- all UI + API routes (except /health, /login, /api/login) require auth
+
+---
+D2) Send single email (UI)
+Trigger: user fills Send form and clicks “Send Email”
+
+Sequence:
+1. Browser builds FormData:
+   - email, name, subject, body, optional resume
+2. POST /api/send
+3. Server builds effective settings:
+   - SMTP settings (env + UI overrides)
+   - From name/email
+   - Default subject/body
+   - Default resume if no upload
+4. Server decides content:
+   - If body is provided → treat as override
+   - Else → use default template builder
+5. Nodemailer sendMail.
+6. Server appends to sent.xlsx.
+7. UI shows result including whether defaults were used.
+
+---
+D3) Bulk send via Excel
+Trigger: user uploads .xlsx and clicks “Send Bulk Emails”
+
+Sequence:
+1. UI sends POST /api/send-bulk with excel (+ optional resume).
+2. Server parses first sheet:
+   - expected columns: email, recipient name, subject, body
+   - flexible header matching; dedupe by email
+3. For each row:
+   - subject/body override if present, else defaults
+   - send with shared transporter
+   - log to sent.xlsx
+4. UI shows summary: total/sent/failed + samples.
+
+---
+D4) Bulk send via pasted list
+Trigger: user pastes comma/newline emails and clicks “Send Bulk Emails”
+
+Sequence:
+1. UI sends POST /api/send-list.
+2. Server parses & dedupes emails.
+3. Uses defaults subject/body.
+4. Sends and logs like Excel flow.
+
+---
+D5) Defaults management
+Trigger: user edits defaults and clicks Save
+
+Sequence:
+1. GET /api/settings loads saved settings and indicates if password/resume are set.
+2. POST /api/settings saves settings (password is not returned back).
+3. POST /api/settings/resume uploads and stores data/default-resume.pdf.
+4. Send tabs automatically reflect default subject/body if empty.
+
+---
+D6) HR Finder
+Trigger: user enters company and/or domain and clicks Search
+
+Sequence:
+1. UI calls GET /api/hr-lookup?company=...&domain=...&provider=hunter|apollo
+2. Server determines domain:
+   - If domain provided, use it.
+   - Else use Clearbit autocomplete to infer domain.
+   - If company has suffixes (Pvt/Ltd/etc), server retries simplified variants.
+3. Provider query:
+   - Hunter: domain-search → filter recruiting titles → fallback to all
+   - Apollo: people search → normalize contact fields
+4. UI renders cards with copy/send buttons.
+
+---
+D7) ATS Score + Optimize
+Trigger: user uploads resume (or pastes text) and JD
+
+Sequence:
+1. UI posts JD + resume to /api/ats-score or /api/ats-optimize.
+2. Server extracts text.
+3. Computes score + suggestions.
+4. Optimize path generates a downloadable PDF at /api/ats-optimized.pdf.
+
+---
+E) Failure & recovery flows
+- SMTP network blocks → transporter fallback 465 attempt (587 + STARTTLS case)
+- Per-recipient failure doesn’t stop bulk send → errors recorded per email
+- Logs are written atomically to avoid corruption on crash
+
+---
+F) “Why it works” summary
+This system is reliable because:
+- Idempotency: sent.json prevents re-sending in automation mode
+- Resilience: SMTP verify + fallback strategy
+- Operational visibility: Excel log + UI status
+- Automation + UI: supports both headless workflows and interactive workflow
+
+======================================================================
+FILE: 03_INTERVIEW_EXPLANATION.md
+======================================================================
+Job Mailer — How to Explain to an Interviewer (Story + Highlights)
+1) 20–30 second pitch (elevator pitch)
+“I built a Node.js tool called Job Mailer that automates job application emails. It supports both a headless automation mode and a clean local web UI. The automation mode reads a recipients CSV, sends only the pending emails on a schedule, and also watches the CSV so adding a new recipient triggers an immediate send. The UI lets me send single or bulk emails, manage SMTP/default templates, and even discover HR emails using external provider APIs. Everything is logged locally to JSON and Excel so I can track what was sent and avoid duplicates.”
+
+---
+2) The problem I solved (what motivated the project)
+- Sending job applications repeatedly is repetitive and error-prone.
+- Manual sending leads to:
+  - duplicated emails
+  - inconsistent templates
+  - poor tracking of who was contacted
+  - time wasted managing attachments and bulk lists
+
+This project turns that into a reliable workflow with idempotency + logging.
+
+---
+3) What the user can do (demo script)
+If you’re demoing live:
+
+1) Show UI (npm run ui)
+- Login (optional)
+- Go to Send tab → send one email
+- Show that you can leave subject/body blank and defaults are used
+
+2) Show Bulk
+- Upload Excel template
+- Send bulk and show summary + sent.xlsx download
+
+3) Show Defaults
+- Update SMTP/from/subject/body
+- Upload default resume
+
+4) Show HR Finder
+- Enter company or domain → fetch HR contacts
+- Copy email / send directly
+
+5) (Optional) Show Automation mode
+- Open data/recipients.csv
+- Add a new email row and show watcher sends immediately
+
+---
+4) Best functionalities to highlight (the “best of best”)
+A) Idempotent sending (no duplicates)
+- Uses data/sent.json as a per-email state store.
+- The scheduler sends only pending recipients.
+
+Why it impresses: shows you understand real automation needs (statefulness).
+B) SMTP reliability improvement
+- Before sending, it verifies SMTP.
+- If a common failure occurs on 587 STARTTLS (network blocked), it retries 465 SSL.
+
+Why it impresses: shows practical production-like handling of flaky networks.
+C) Bulk workflows with good UX
+- Excel upload parsing (flexible headers, dedupe by email)
+- Pasted list mode (comma/newline)
+- Shows results and saves a downloadable log
+
+Why it impresses: it’s not just backend; it’s end-to-end product thinking.
+D) HR Finder integration
+- External APIs (Hunter / Apollo)
+- Domain resolution from company name
+- UI contacts card rendering with “send now” action
+
+Why it impresses: integration engineering + mapping inconsistent API shapes.
+E) Defaults + template system
+- Saved defaults reduce repeated typing.
+- Signature injection prevents broken/duplicated signatures.
+
+Why it impresses: attention to content quality and maintainability.
+
+---
+5) Challenges faced (and how you solved them)
+1) “How do I prevent duplicates?”
+- Solution: sent.json idempotency store keyed by email + status transitions.
+2) “SMTP networks are unreliable”
+- Solution: verify transporter + conditional fallback to port 465.
+3) “Bulk parsing is messy”
+- Excel has inconsistent column names and duplicates.
+- Solution: normalize headers, accept multiple variants, dedupe while preserving best info.
+4) “External HR APIs return inconsistent shapes”
+- Solution: normalize fields, map common structures, cap results, and handle missing data.
+5) “UI dropdown selection didn’t work for some company names”
+- Root cause: long legal suffixes reduce domain-detection accuracy.
+- Solution: server retries simplified variants (strip Pvt/Ltd/etc; use first words).
+
+---
+6) Trade-offs (good engineering maturity)
+- UI auth uses in-memory sessions → simple for local use, but not for multi-instance production.
+- Logs are local files → easy, portable, but not multi-user/centralized.
+- SMTP is convenient but can be blocked → email API provider would be more reliable.
+
+---
+7) How you would improve it (future scope)
+- Add queue + retries with exponential backoff.
+- Add a database (SQLite/Postgres) for scalable logs and reporting.
+- Add rate limiting + provider abstraction layer.
+- Add automated tests for parsers and key flows.
+
+---
+8) Strong closing line
+“This project demonstrates I can design a full workflow end-to-end: file-based automation + web UI + external API integrations + reliable sending + logging/idempotency, with clear trade-offs and room for scaling.”
+
+======================================================================
+FILE: 04_QUICKSTART.md
+======================================================================
+Job Mailer — Quickstart (Necessary Doc)
+Prerequisites
+- Node.js installed
+- A working SMTP account (Gmail App Password recommended)
+Install
+npm install
+Configure
+Create .env in project root (copy from env.example) and set your values.
+
+Minimum required for sending:
+- SMTP_HOST, SMTP_PORT, SMTP_SECURE
+- SMTP_USER, SMTP_PASS
+- FROM_EMAIL (or it will default to SMTP_USER)
+- RESUME_PATH
+
+Optional but recommended:
+- UI_AUTH_USER, UI_AUTH_PASS (protect the UI)
+Run modes
+- UI mode:
+npm run ui
+Open the printed URL (typically http://localhost:4545).
+
+- Automation mode (watcher + cron):
+npm run start
+
+- One-shot send (send all pending from CSV):
+npm run send:now
+
+- Watch-only mode:
+npm run watch
+Automation input file
+Create data/recipients.csv with either format:
+
+Header format:
+- email,name
+
+Or headerless:
+- someone@company.com,Recruiter Name
+Where logs are stored
+- data/sent.json → idempotency + status
+- data/sent.xlsx → excel report
+Troubleshooting
+- If SMTP fails on port 587 due to network restrictions, try:
+  - SMTP_PORT=465
+  - SMTP_SECURE=true
+- If HR Finder returns nothing, provide the company domain directly for best accuracy.
+
+======================================================================
+FILE: 05_API_REFERENCE.md
+======================================================================
+Job Mailer — API Reference (Necessary Doc)
+
+Base URL: the UI server host/port (default http://localhost:4545).
+Note: If UI auth is enabled, you must login first so the cookie session is present.
+
+---
+Auth
+POST /api/login
+Body (JSON):
+- user: string
+- pass: string
+
+Response:
+- { ok: true, authEnabled: true } or error.
+POST /api/logout
+No body.
+
+---
+Settings
+GET /api/settings
+Returns saved settings metadata and safe fields (password not returned).
+POST /api/settings
+Body (JSON):
+- smtpHost, smtpPort, smtpSecure
+- smtpUser, smtpPass (optional; blank keeps existing)
+- fromEmail, fromName
+- subject, defaultBody
+POST /api/settings/resume
+Multipart:
+- resume: PDF file
+
+---
+Sending
+POST /api/send
+Multipart:
+- email (required)
+- name (optional)
+- subject (optional)
+- body (optional)
+- resume (optional PDF)
+
+Response:
+- { ok: true, toEmail, subject, messageId, usedDefaults: { subject, body, resume } }
+POST /api/send-bulk
+Multipart:
+- excel (required .xlsx)
+- resume (optional PDF for all rows)
+
+Response:
+- { ok: true, total, sent, failed, results: [...] }
+POST /api/send-list
+Multipart:
+- emails (required: comma/newline separated string)
+- resume (optional)
+
+---
+Downloads
+GET /api/template.xlsx
+Downloads a template Excel.
+GET /api/sent.xlsx
+Downloads the current sent log Excel.
+
+---
+HR Finder
+GET /api/provider-status
+Returns which HR providers are configured (no secrets).
+GET /api/company-names
+Returns saved company names (for dropdown).
+GET /api/company-suggest?query=...
+Returns live company name suggestions (Clearbit).
+GET /api/hr-lookup
+Query params:
+- company (optional)
+- domain (optional but recommended)
+- provider (hunter or apollo)
+
+Response:
+- { ok: true, domain, contacts: [...] }
+
+---
+ATS
+POST /api/ats-score
+Multipart:
+- jd (required)
+- resume (optional file) OR resumeText (optional text)
+POST /api/ats-optimize
+Same input, returns suggestions + makes /api/ats-optimized.pdf available.
+GET /api/ats-optimized.pdf
+Downloads the last generated PDF.

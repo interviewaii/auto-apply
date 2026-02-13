@@ -1,0 +1,24 @@
+{
+  "searchCriteria": {
+    "keywords": "java developer",
+    "location": "pune",
+    "experience": "3",
+    "postedWithin": 1,
+    "remote": true
+  },
+  "platforms": {
+    "naukri": {
+      "enabled": true,
+      "credentials": {
+        "email": "vickyjagdale04@gmail.com",
+        "password": "Vicky@2001"
+      },
+      "maxAppliesPerDay": 30
+    }
+  },
+  "automation": {
+    "headless": false,
+    "autoApplyEnabled": true,
+    "delayBetweenApplications": 10000
+  }
+}

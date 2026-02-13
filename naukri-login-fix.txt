@@ -1,0 +1,48 @@
+// Two-step login fix for Naukri
+// Insert this code after line 165 (after ].join(", ");)
+
+// Check if password field exists (might be two-step login)
+let passwordField = await this.page.$(passSelector);
+
+if (!passwordField) {
+    console.log("[Naukri] Password field not visible, looking for Next/Continue button...");
+    
+    const nextClicked = await this.page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('button, a, input[type="submit"]'));
+        const nextBtn = buttons.find(btn => {
+            const text = btn.textContent.trim().toLowerCase();
+            return text === 'next' || text === 'continue' || text.includes('proceed');
+        });
+        
+        if (nextBtn && nextBtn.offsetParent !== null) {
+            nextBtn.click();
+            return true;
+        }
+        return false;
+    });
+    
+    if (nextClicked) {
+        console.log("[Naukri] Clicked Next, waiting for password field...");
+        await this.sleep(3000);
+        
+        try {
+            await this.page.waitForSelector(passSelector, { timeout: 10000 });
+            passwordField = await this.page.$(passSelector);
+        } catch (e) {
+            console.log("[Naukri] Password field not found after Next");
+        }
+    }
+}
+
+if (!passwordField) {
+    const pageState = await this.page.evaluate(() => ({
+        url: window.location.href,
+        inputs: Array.from(document.querySelectorAll('input')).map(inp => ({
+            type: inp.type, id: inp.id, name: inp.name, placeholder: inp.placeholder
+        }))
+    }));
+    console.log("[Naukri] Page state:", JSON.stringify(pageState, null, 2));
+    throw new Error("Password field not found - Naukri login may have changed");
+}
+
+// Then the existing line: await this.page.type(passSelector, password, { delay: 50 });

@@ -1,0 +1,11 @@
+node_modules/
+.env
+data/sent.json
+data/sent.backup.json
+.DS_Store
+assets/*.pdf
+data/recipients.csv
+.npm-cache/
+dist/
+
+

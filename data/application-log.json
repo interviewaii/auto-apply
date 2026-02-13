@@ -1,0 +1,1201 @@
+{
+  "applications": [
+    {
+      "platform": "naukri",
+      "jobId": "full-stack-developer-michelin-pune-1-to-3-years-060226502462",
+      "jobTitle": "Full Stack Developer",
+      "company": "Michelin",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:25:15.967Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "junior-devops-engineer-neemtree-internet-pvt-ltd-pune-1-to-3-years-040226502021",
+      "jobTitle": "Junior DevOps Engineer",
+      "company": "Neemtree Internet",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:25:28.778Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "business-technology-solutions-associate-consultant-zs-associates-india-pvt-ltd-pune-1-to-3-years-030226927252",
+      "jobTitle": "Business Technology Solutions Associate Consultant",
+      "company": "ZS",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:26:03.800Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "flutter-developer-om-softwares-pune-1-to-3-years-060226507073",
+      "jobTitle": "Flutter Developer",
+      "company": "OM Software",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:26:16.172Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "junior-engineer-wipro-limited-pune-0-to-2-years-030226929970",
+      "jobTitle": "JUNIOR ENGINEER",
+      "company": "Wipro",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:26:26.993Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "40k-inhand-pm-hiring-software-professionals-us-shift-recruiter-role-dexian-india-technologies-pune-1-to-4-years-030226037253",
+      "jobTitle": "40k inhand pm- Hiring Software Professionals- US Shift- Recruiter role",
+      "company": "Dexian India Technologies",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:26:43.592Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-native-developer-for-viman-nagar-in-pune-location-immediate-join-honeybee-tech-solutions-pune-1-to-4-years-050226024516",
+      "jobTitle": "React Native Developer For Viman Nagar in Pune location:Immediate Join",
+      "company": "Honeybee Tech Solutions",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:27:00.792Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "project-trainee-maharashtra-knowledge-corporation-mkcl-navi-mumbai-pune-0-to-0-years-280126035246",
+      "jobTitle": "Project Trainee",
+      "company": "Maharashtra Knowledge Corporation (MKCL)",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:27:16.904Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "iot-engineer-covacsis-technologies-pvt-ltd-mumbai-nagpur-thane-nashik-pune-aurangabad-1-to-3-years-290126506265",
+      "jobTitle": "IoT Engineer",
+      "company": "Covacsis Technologies",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:27:28.817Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "junior-java-fullstack-developer-bmw-techworks-india-private-limited-pune-1-to-3-years-290126922368",
+      "jobTitle": "Junior Java Fullstack Developer",
+      "company": "BMW Techworks India",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:27:44.064Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "associate-software-engineer-cornerstone-on-demand-pune-1-to-3-years-300126502049",
+      "jobTitle": "Associate Software Engineer",
+      "company": "Cornerstone",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:27:54.957Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "angular-developer-glaxm-infotech-pune-1-to-3-years-290126000052",
+      "jobTitle": "Angular Developer",
+      "company": "Glaxm Infotech",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:28:07.604Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "associate-software-analyst-android-developer-servicemax-india-pune-1-to-4-years-310126503190",
+      "jobTitle": "Associate Software Analyst (Android Developer)",
+      "company": "PTC",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:28:20.297Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "senior-software-engineer-defense-and-consulting-engineering-ti-steps-pune-india-1-to-5-years-290126026834",
+      "jobTitle": "Senior Software Engineer, Defense and Consulting Engineering",
+      "company": "ti Steps",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:28:36.582Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "ui-ux-developer-om-softwares-pune-1-to-2-years-270126502677",
+      "jobTitle": "UI/UX Developer",
+      "company": "OM Software",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:28:48.079Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-enique-it-solutions-private-limited-hyderabad-pune-1-to-3-years-070524500884",
+      "jobTitle": "Java Developer",
+      "company": "Enique It Solutions",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:28:59.322Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-saturo-technologies-private-limited-pune-1-to-5-years-210126501108",
+      "jobTitle": "Java Developer",
+      "company": "Saturo Technologies",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:29:10.355Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-150525504270",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:29:21.454Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-010525501383",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:29:31.604Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-050625503307",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:29:42.348Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-yosofttech-pune-1-to-3-years-090525501609",
+      "jobTitle": "Java Developer",
+      "company": "Yosofttech",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:29:53.144Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-020625502431",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:30:04.186Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-with-gcp-and-apigee-tekskills-india-private-limited-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-4-years-220125502192",
+      "jobTitle": "Java Developer with GCP and Apigee",
+      "company": "Tekskills",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:30:14.908Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-infosys-pune-chennai-bengaluru-3-to-8-years-290525038305",
+      "jobTitle": "Java Developer - (Bangalore/Pune)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:30:27.865Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-3-years-infosys-pune-chennai-bengaluru-3-to-8-years-230525013210",
+      "jobTitle": "Java Developer 3+ Years",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:30:41.858Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-010525501383",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:56:29.142Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-050625503307",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:56:39.194Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-yosofttech-pune-1-to-3-years-090525501609",
+      "jobTitle": "Java Developer",
+      "company": "Yosofttech",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:56:50.614Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-020625502431",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:57:01.914Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-with-gcp-and-apigee-tekskills-india-private-limited-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-4-years-220125502192",
+      "jobTitle": "Java Developer with GCP and Apigee",
+      "company": "Tekskills",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:57:13.960Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-infosys-pune-chennai-bengaluru-3-to-8-years-290525038305",
+      "jobTitle": "Java Developer - (Bangalore/Pune)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:57:43.215Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-3-years-infosys-pune-chennai-bengaluru-3-to-8-years-230525013210",
+      "jobTitle": "Java Developer 3+ Years",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T19:58:08.688Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-enique-it-solutions-private-limited-hyderabad-pune-1-to-3-years-070524500884",
+      "jobTitle": "Java Developer",
+      "company": "Enique It Solutions",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:09:19.426Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-saturo-technologies-private-limited-pune-1-to-5-years-210126501108",
+      "jobTitle": "Java Developer",
+      "company": "Saturo Technologies",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:09:31.268Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-150525504270",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:09:42.627Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-ab-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-150525020800",
+      "jobTitle": "Java Developer-AB-Pan India",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:10:09.649Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-5-9-yrs-infosys-hyderabad-pune-bengaluru-3-to-8-years-070525022676",
+      "jobTitle": "Java Developer -(5-9 Yrs)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:10:35.956Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-acmasoft-web-solutions-mumbai-hyderabad-pune-gurugram-bengaluru-1-to-3-years-211024503547",
+      "jobTitle": "Java Developer",
+      "company": "Acmasoft",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:10:47.897Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-270525038105",
+      "jobTitle": "Java Developer - ((PAN INDIA))",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:47:27.165Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-eternus-solutions-now-infobeans-pune-3-to-5-years-290126511536",
+      "jobTitle": "Java Developer",
+      "company": "Eternus Solutions",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:47:51.149Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-maig-innovations-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-2-to-6-years-250825500691",
+      "jobTitle": "Java Developer",
+      "company": "Maig Innovations",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:48:12.799Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-xoriant-pune-3-to-8-years-290126036813",
+      "jobTitle": "Java Developer",
+      "company": "Xoriant",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:49:20.350Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-j2ee-developer-ideslabs-private-limited-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-5-years-071223501189",
+      "jobTitle": "Java/J2ee Developer",
+      "company": "IDESLABS",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:59:14.043Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "junior-java-fullstack-developer-bmw-techworks-india-private-limited-pune-1-to-3-years-290126922368",
+      "jobTitle": "Junior Java Fullstack Developer",
+      "company": "BMW Techworks India",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:59:26.358Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "associate-backend-java-developer-msci-services-pune-1-to-3-years-310126014321",
+      "jobTitle": "Associate (Backend - Java Developer)",
+      "company": "MSCI Services",
+      "status": "failed",
+      "timestamp": "2026-02-11T20:59:46.092Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-3-years-infosys-pune-chennai-bengaluru-3-to-8-years-230525013210",
+      "jobTitle": "Java Developer 3+ Years",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T21:52:53.887Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-ab-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-150525020800",
+      "jobTitle": "Java Developer-AB-Pan India",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T21:53:46.312Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-5-9-yrs-infosys-hyderabad-pune-bengaluru-3-to-8-years-070525022676",
+      "jobTitle": "Java Developer -(5-9 Yrs)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T21:54:37.591Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-infosys-pune-chennai-bengaluru-3-to-8-years-290525038305",
+      "jobTitle": "Java Developer - (Bangalore/Pune)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:00:05.526Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-270525038105",
+      "jobTitle": "Java Developer - ((PAN INDIA))",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:00:58.214Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-xoriant-pune-3-to-8-years-290126036813",
+      "jobTitle": "Java Developer",
+      "company": "Xoriant",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:16:33.925Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "software-developer-java-interface-infosoft-solutions-pune-1-to-4-years-090226501002",
+      "jobTitle": "Software Developer - Java",
+      "company": "Interface Infosoft",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:17:10.967Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "opening-for-sql-java-developer-aditi-systems-mumbai-hyderabad-pune-bengaluru-0-to-5-years-110226014721",
+      "jobTitle": "opening For SQL /JAVA Developer",
+      "company": "MNC COMPANY",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:17:52.381Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "associate-backend-java-developer-msci-services-pune-1-to-3-years-310126014321",
+      "jobTitle": "Associate (Backend - Java Developer)",
+      "company": "MSCI Services",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:18:28.037Z",
+      "failureReason": "no_apply_button"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-enique-it-solutions-private-limited-hyderabad-pune-1-to-3-years-070524500884",
+      "jobTitle": "Java Developer",
+      "company": "Enique It Solutions",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:25:33.801Z",
+      "failureReason": "external_redirect"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-saturo-technologies-private-limited-pune-1-to-5-years-210126501108",
+      "jobTitle": "Java Developer",
+      "company": "Saturo Technologies",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:26:10.933Z",
+      "failureReason": "external_redirect"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-150525504270",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:26:47.487Z",
+      "failureReason": "external_redirect"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-010525501383",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:27:24.483Z",
+      "failureReason": "external_redirect"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-050625503307",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:31:05.007Z",
+      "failureReason": "external_redirect"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-yosofttech-pune-1-to-3-years-090525501609",
+      "jobTitle": "Java Developer",
+      "company": "Yosofttech",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:31:40.886Z",
+      "failureReason": "external_redirect"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-020625502431",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:36:23.433Z",
+      "failureReason": "external_redirect"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-with-gcp-and-apigee-tekskills-india-private-limited-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-4-years-220125502192",
+      "jobTitle": "Java Developer with GCP and Apigee",
+      "company": "Tekskills",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:37:01.893Z",
+      "failureReason": "external_redirect"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-infosys-pune-chennai-bengaluru-3-to-8-years-290525038305",
+      "jobTitle": "Java Developer - (Bangalore/Pune)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:37:52.709Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-3-years-infosys-pune-chennai-bengaluru-3-to-8-years-230525013210",
+      "jobTitle": "Java Developer 3+ Years",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:38:43.876Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-ab-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-150525020800",
+      "jobTitle": "Java Developer-AB-Pan India",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:39:36.920Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-5-9-yrs-infosys-hyderabad-pune-bengaluru-3-to-8-years-070525022676",
+      "jobTitle": "Java Developer -(5-9 Yrs)",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-11T22:40:14.253Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-acmasoft-web-solutions-mumbai-hyderabad-pune-gurugram-bengaluru-1-to-3-years-211024503547",
+      "jobTitle": "Java Developer",
+      "company": "Acmasoft",
+      "status": "applied",
+      "timestamp": "2026-02-11T22:40:50.670Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-270525038105",
+      "jobTitle": "Java Developer - ((PAN INDIA))",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-11T22:41:42.465Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-siemens-pune-1-to-4-years-120226012979",
+      "jobTitle": "Java Developer",
+      "company": "Siemens",
+      "status": "failed",
+      "timestamp": "2026-02-13T14:53:38.789Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-enique-it-solutions-private-limited-hyderabad-pune-1-to-3-years-070524500884",
+      "jobTitle": "Java Developer",
+      "company": "Enique It Solutions",
+      "status": "skipped",
+      "timestamp": "2026-02-13T14:54:15.784Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-saturo-technologies-private-limited-pune-1-to-5-years-210126501108",
+      "jobTitle": "Java Developer",
+      "company": "Saturo Technologies",
+      "status": "skipped",
+      "timestamp": "2026-02-13T16:14:44.147Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-150525504270",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "skipped",
+      "timestamp": "2026-02-13T16:15:21.555Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-010525501383",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "skipped",
+      "timestamp": "2026-02-13T16:15:56.947Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-050625503307",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "applied",
+      "timestamp": "2026-02-13T16:16:32.225Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-yosofttech-pune-1-to-3-years-090525501609",
+      "jobTitle": "Java Developer",
+      "company": "Yosofttech",
+      "status": "skipped",
+      "timestamp": "2026-02-13T16:36:11.017Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-020625502431",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "skipped",
+      "timestamp": "2026-02-13T16:36:58.034Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-hyderabad-infosys-pune-chennai-bengaluru-3-to-8-years-300525037446",
+      "jobTitle": "Java Developer - ((Bangalore,Pune,Hyderabad))",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T16:38:20.340Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-infosys-infosys-hyderabad-pune-bengaluru-3-to-8-years-300525031601",
+      "jobTitle": "Java Developer** Infosys",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T16:53:09.321Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-infosys-pune-chennai-bengaluru-3-to-8-years-290525038305",
+      "jobTitle": "Java Developer - (Bangalore/Pune)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T17:10:23.853Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-h-infosys-hyderabad-pune-bengaluru-3-to-8-years-160525041452",
+      "jobTitle": "Java Developer (H)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T17:24:14.976Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-5-9-yrs-infosys-hyderabad-pune-bengaluru-3-to-8-years-070525022676",
+      "jobTitle": "Java Developer -(5-9 Yrs)",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T17:25:38.408Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-070525021165",
+      "jobTitle": "Java Developer (pan India)",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T18:09:00.753Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-acmasoft-web-solutions-mumbai-hyderabad-pune-gurugram-bengaluru-1-to-3-years-211024503547",
+      "jobTitle": "Java Developer",
+      "company": "Acmasoft",
+      "status": "applied",
+      "timestamp": "2026-02-13T18:13:16.573Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-with-gcp-and-apigee-tekskills-india-private-limited-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-4-years-220125502192",
+      "jobTitle": "Java Developer with GCP and Apigee",
+      "company": "Tekskills",
+      "status": "skipped",
+      "timestamp": "2026-02-13T18:13:53.516Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-270525038105",
+      "jobTitle": "Java Developer - ((PAN INDIA))",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T18:21:45.367Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-3-years-infosys-pune-chennai-bengaluru-3-to-8-years-230525013210",
+      "jobTitle": "Java Developer 3+ Years",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T18:32:12.384Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-ab-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-150525020800",
+      "jobTitle": "Java Developer-AB-Pan India",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T18:53:15.525Z",
+      "failureReason": "unknown_status"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-om-softwares-pune-1-to-4-years-060226507091",
+      "jobTitle": "Java Developer",
+      "company": "OM Software",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:01:08.410Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "playwrite-typescript-professionals-han-digital-solution-p-mumbai-nagpur-thane-nashik-pune-aurangabad-3-to-7-years-091225504231",
+      "jobTitle": "Playwrite Typescript Professionals",
+      "company": "Han Digital Solution",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:03:03.524Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-js-developer-prometteur-solutions-pvt-ltd-pune-1-to-3-years-050226502083",
+      "jobTitle": "react js developer",
+      "company": "Prometteur Solutions Pvt Ltd",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:04:16.887Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-native-developer-outmarch-pune-1-to-4-years-020226909250",
+      "jobTitle": "React Native Developer",
+      "company": "Outmarch",
+      "status": "applied",
+      "timestamp": "2026-02-13T19:05:09.576Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-native-developer-for-viman-nagar-in-pune-location-immediate-join-honeybee-tech-solutions-pune-1-to-4-years-050226024516",
+      "jobTitle": "React Native Developer For Viman Nagar in Pune location:Immediate Join",
+      "company": "Honeybee Tech Solutions",
+      "status": "applied",
+      "timestamp": "2026-02-13T19:05:51.908Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-js-developer-arsr-technologies-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-4-years-301020500935",
+      "jobTitle": "React . JS Developer",
+      "company": "Arsr Technologies",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:06:29.388Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-native-developer-the-space-element-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-5-years-241224506199",
+      "jobTitle": "React Native Developer",
+      "company": "The Space Element",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:07:05.159Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-developer-videosdk-live-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-3-years-090625504165",
+      "jobTitle": "React Developer",
+      "company": "Video Sdk",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:07:41.391Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-developer-relinns-technologies-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-0-to-3-years-070225505697",
+      "jobTitle": "React Developer",
+      "company": "Relinns",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:08:24.790Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-native-developer-exzeo-software-pvt-ltd-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-3-years-210825500576",
+      "jobTitle": "React Native Developer",
+      "company": "Exzeo Software",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:09:02.646Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-native-developer-acmasoft-web-solutions-mumbai-hyderabad-pune-gurugram-bengaluru-1-to-4-years-211024503550",
+      "jobTitle": "React Native Developer",
+      "company": "Acmasoft",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:09:39.203Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "ui-lead-react-js-yash-technologies-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-2-to-6-years-060226507754",
+      "jobTitle": "UI Lead - React JS",
+      "company": "Yash Technologies",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:10:16.549Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-native-developer-mish-tech-pune-1-to-4-years-011025504020",
+      "jobTitle": "React Native Developer",
+      "company": "Mish Tech Punjab",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:10:52.677Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-developer-tudip-technologies-pvt-ltd-pune-1-to-3-years-290925502744",
+      "jobTitle": "React Developer",
+      "company": "Tudip Technologies",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:11:29.852Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "frontend-developer-react-js-typescript-victrix-systems-and-labs-pune-1-to-3-years-150126926835",
+      "jobTitle": "Frontend Developer - React.js / TypeScript",
+      "company": "Victrix Systems And Labs",
+      "status": "applied",
+      "timestamp": "2026-02-13T19:23:56.607Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "frontend-engineer-react-js-tinvio-digital-services-india-pvt-ltd-pune-1-to-5-years-140126934731",
+      "jobTitle": "Frontend Engineer - React.js",
+      "company": "Tinvio Digital Services",
+      "status": "applied",
+      "timestamp": "2026-02-13T19:24:26.953Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-js-developer-mplussoft-india-pvt-ltd-pune-1-to-5-years-031125505059",
+      "jobTitle": "React JS Developer",
+      "company": "Mplussoft",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:24:44.441Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-native-developer-shreecom-infotech-india-pvt-ltd-pune-1-to-3-years-310723500255",
+      "jobTitle": "React Native Developer",
+      "company": "ShreeCom InfoTech India Pvt. Ltd.",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:25:01.838Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "react-js-developer-scrimatec-it-solutions-pune-1-to-5-years-240924502750",
+      "jobTitle": "React JS Developer",
+      "company": "Scrimatec It Solutions",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:25:17.973Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-siemens-pune-1-to-4-years-120226012979",
+      "jobTitle": "Java Developer",
+      "company": "Siemens",
+      "status": "failed",
+      "timestamp": "2026-02-13T19:35:29.113Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-om-softwares-pune-1-to-4-years-060226507091",
+      "jobTitle": "Java Developer",
+      "company": "OM Software",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:41:50.795Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-enique-it-solutions-private-limited-hyderabad-pune-1-to-3-years-070524500884",
+      "jobTitle": "Java Developer",
+      "company": "Enique It Solutions",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:42:07.884Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-saturo-technologies-private-limited-pune-1-to-5-years-210126501108",
+      "jobTitle": "Java Developer",
+      "company": "Saturo Technologies",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:42:25.159Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-150525504270",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:42:41.501Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-010525501383",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:43:00.597Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-050625503307",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "applied",
+      "timestamp": "2026-02-13T19:43:18.008Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-yosofttech-pune-1-to-3-years-090525501609",
+      "jobTitle": "Java Developer",
+      "company": "Yosofttech",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:43:34.334Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-diverse-lynx-pune-1-to-5-years-020625502431",
+      "jobTitle": "Java Developer",
+      "company": "Diverse Lynx",
+      "status": "skipped",
+      "timestamp": "2026-02-13T19:43:51.171Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-hyderabad-infosys-pune-chennai-bengaluru-3-to-8-years-300525037446",
+      "jobTitle": "Java Developer - ((Bangalore,Pune,Hyderabad))",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T19:50:37.867Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-infosys-infosys-hyderabad-pune-bengaluru-3-to-8-years-300525031601",
+      "jobTitle": "Java Developer** Infosys",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T19:51:17.339Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-infosys-pune-chennai-bengaluru-3-to-8-years-290525038305",
+      "jobTitle": "Java Developer - (Bangalore/Pune)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T19:57:18.495Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-h-infosys-hyderabad-pune-bengaluru-3-to-8-years-160525041452",
+      "jobTitle": "Java Developer (H)",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T19:57:57.579Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-5-9-yrs-infosys-hyderabad-pune-bengaluru-3-to-8-years-070525022676",
+      "jobTitle": "Java Developer -(5-9 Yrs)",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:01:45.047Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-070525021165",
+      "jobTitle": "Java Developer (pan India)",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:02:02.889Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-acmasoft-web-solutions-mumbai-hyderabad-pune-gurugram-bengaluru-1-to-3-years-211024503547",
+      "jobTitle": "Java Developer",
+      "company": "Acmasoft",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:02:20.267Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-with-gcp-and-apigee-tekskills-india-private-limited-kolkata-mumbai-new-delhi-hyderabad-pune-chennai-bengaluru-1-to-4-years-220125502192",
+      "jobTitle": "Java Developer with GCP and Apigee",
+      "company": "Tekskills",
+      "status": "skipped",
+      "timestamp": "2026-02-13T20:02:36.127Z",
+      "failureReason": "Manual Apply (Company Site)",
+      "externalUrl": null
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-siemens-pune-1-to-4-years-120226012979",
+      "jobTitle": "Java Developer",
+      "company": "Siemens",
+      "status": "failed",
+      "timestamp": "2026-02-13T20:26:02.141Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-hyderabad-infosys-pune-chennai-bengaluru-3-to-8-years-300525037446",
+      "jobTitle": "Java Developer - ((Bangalore,Pune,Hyderabad))",
+      "company": "Infosys",
+      "status": "failed",
+      "timestamp": "2026-02-13T20:26:34.874Z",
+      "failureReason": "error"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-bangalore-pune-infosys-pune-chennai-bengaluru-3-to-8-years-290525038305",
+      "jobTitle": "Java Developer - (Bangalore/Pune)",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:26:52.096Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-h-infosys-hyderabad-pune-bengaluru-3-to-8-years-160525041452",
+      "jobTitle": "Java Developer (H)",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:40:28.694Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-5-9-yrs-infosys-hyderabad-pune-bengaluru-3-to-8-years-070525022676",
+      "jobTitle": "Java Developer -(5-9 Yrs)",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:40:48.804Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-070525021165",
+      "jobTitle": "Java Developer (pan India)",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:41:06.599Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-270525038105",
+      "jobTitle": "Java Developer - ((PAN INDIA))",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:41:23.063Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-3-years-infosys-pune-chennai-bengaluru-3-to-8-years-230525013210",
+      "jobTitle": "Java Developer 3+ Years",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:41:56.679Z"
+    },
+    {
+      "platform": "naukri",
+      "jobId": "java-developer-ab-pan-india-infosys-pune-chennai-bengaluru-3-to-8-years-150525020800",
+      "jobTitle": "Java Developer-AB-Pan India",
+      "company": "Infosys",
+      "status": "applied",
+      "timestamp": "2026-02-13T20:42:28.236Z"
+    }
+  ]
+}
