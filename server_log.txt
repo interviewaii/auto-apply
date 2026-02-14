@@ -1,0 +1,59 @@
+﻿UI running at http://localhost:4545
+Env loaded from: F:\JobReach-main\JobReach-main\.env
+node : F:\JobReach-m
+ain\JobReach-main\ba
+ckend\src\ui-server.
+js:2391
+At line:1 char:19
++ $env:PORT="4545"; 
+node backend/src/ui-
+server.js 2>&1 | 
+Out-File -File ...
++                   
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (F:\J   
+ obReach-mai...-    
+server.js:2391:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+    `Auth enabled: 
+${AUTH_ENABLED ? 
+"yes" : 
+"no"}${AUTH_ENABLED 
+? "" : " (set UI_AUT
+H_USER/UI_AUTH_PASS 
+to enable)"
+                    
+ ^
+
+ReferenceError: 
+AUTH_ENABLED is not 
+defined
+    at 
+Server.<anonymous> (
+F:\JobReach-main\Job
+Reach-main\backend\s
+rc\ui-server.js:2391
+:22)
+    at 
+Object.onceWrapper 
+(node:events:622:28)
+    at Server.emit 
+(node:events:520:35)
+    at 
+emitListeningNT 
+(node:net:1983:10)
+    at process.proce
+ssTicksAndRejections
+ (node:internal/proc
+ess/task_queues:88:2
+1)
+
+Node.js v24.11.1

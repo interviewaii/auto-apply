@@ -345,6 +345,8 @@ const defResume = $("#defResume");
 const defUploadResumeBtn = $("#defUploadResumeBtn");
 const defSaveBtn = $("#defSaveBtn");
 const defStatus = $("#defStatus");
+const resumePreview = $("#resumePreview");
+const currentUserSpan = $("#currentUser");
 
 function setDefStatus(type, html) {
   if (!defStatus) return;
@@ -384,89 +386,30 @@ async function loadDefaultsIntoUI() {
       bodyInput.value = String(s.defaultBody || "");
     }
 
+
     setDefStatus(
       "empty",
       `Loaded. Saved password: <strong>${s.smtpPassSet ? "yes" : "no"}</strong>. Resume uploaded: <strong>${s.resumeSet ? "yes" : "no"
       }</strong>.`,
     );
   } catch (e) {
-    setDefStatus("bad", `<strong>Failed to load.</strong><br/>${escapeHtml(String(e?.message || e))}`);
+    setDefStatus("bad", `<strong>Failed.</strong><br/>${escapeHtml(String(e?.message || e))}`);
+  }
+
+  // Fetch current user info
+  try {
+    const res = await fetch("/api/me");
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok && currentUserSpan) {
+      currentUserSpan.textContent = `Logged in as: ${data.username}`;
+    }
+  } catch { }
+
+  // Refresh resume preview
+  if (resumePreview) {
+    resumePreview.src = `/api/user/resume?t=${Date.now()}`;
   }
 }
-
-defSaveBtn?.addEventListener("click", async () => {
-  try {
-    setDefStatus("empty", "Savingâ€¦");
-    const payload = {
-      smtpHost: String(defSmtpHost?.value || "").trim(),
-      smtpPort: Number(String(defSmtpPort?.value || "").trim() || 0) || null,
-      smtpSecure: String(defSmtpSecure?.value || "false") === "true",
-      smtpUser: String(defSmtpUser?.value || "").trim(),
-      smtpPass: String(defSmtpPass?.value || ""),
-      fromEmail: String(defFromEmail?.value || "").trim(),
-      fromName: String(defFromName?.value || "").trim(),
-      subject: String(defSubject?.value || "").trim(),
-      defaultBody: String(defBody?.value || "").trim(),
-      dateOfBirth: String(defDob?.value || "").trim(),
-      totalExperience: String(defExperience?.value || "").trim(),
-      noticePeriod: String(defNoticePeriod?.value || "").trim(),
-      expectedCtc: String(defExpectedCtc?.value || "").trim(),
-      currentLocation: String(defCurrentLocation?.value || "").trim(),
-      preferredLocation: String(defPreferredLocation?.value || "").trim(),
-    };
-    const res = await fetch("/api/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) {
-      const err = data.error || `Request failed (${res.status})`;
-      setDefStatus("bad", `<strong>Save failed.</strong><br/>${escapeHtml(err)}`);
-      toast("bad", "Save failed", err);
-      return;
-    }
-    defSmtpPass.value = "";
-    setDefStatus("good", "<strong>Saved.</strong> Defaults updated.");
-    toast("good", "Saved", "Defaults updated");
-  } catch (e) {
-    const msg = String(e?.message || e);
-    setDefStatus("bad", `<strong>Error.</strong><br/>${escapeHtml(msg)}`);
-    toast("bad", "Error", msg);
-  }
-});
-
-defUploadResumeBtn?.addEventListener("click", async () => {
-  const f = defResume?.files?.[0];
-  if (!f) {
-    toast("bad", "Missing file", "Choose a PDF resume first.");
-    return;
-  }
-  if (!String(f.name || "").toLowerCase().endsWith(".pdf")) {
-    toast("bad", "Invalid file", "Resume must be a PDF.");
-    return;
-  }
-  try {
-    setDefStatus("empty", "Uploading resumeâ€¦");
-    const fd = new FormData();
-    fd.set("resume", f);
-    const res = await fetch("/api/settings/resume", { method: "POST", body: fd });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) {
-      const err = data.error || `Request failed (${res.status})`;
-      setDefStatus("bad", `<strong>Upload failed.</strong><br/>${escapeHtml(err)}`);
-      toast("bad", "Upload failed", err);
-      return;
-    }
-    setDefStatus("good", "<strong>Uploaded.</strong> Default resume updated.");
-    toast("good", "Uploaded", "Default resume updated");
-    await loadDefaultsIntoUI();
-  } catch (e) {
-    const msg = String(e?.message || e);
-    setDefStatus("bad", `<strong>Error.</strong><br/>${escapeHtml(msg)}`);
-    toast("bad", "Error", msg);
-  }
-});
 
 loadDefaultsIntoUI();
 
@@ -1646,54 +1589,54 @@ if (btnAiTailor) {
     try {
       const atsJdVal = $("#atsJd")?.value?.trim();
       let finalJd = atsJdVal;
-      
+
       if (!finalJd) {
         const pasted = prompt("Please paste the Job Description here to tailor your email:");
         if (!pasted) return;
         finalJd = pasted.trim();
       }
-      
+
       const resumeEl = $("#resume");
       // Check if resume is selected (mandatory since no default path set)
       if (!resumeEl || !resumeEl.files || !resumeEl.files[0]) {
         alert("Please select your Resume PDF/DOCX file in the 'Compose & Send' tab before tailoring.");
         return;
       }
-      
+
       const originalText = btnAiTailor.textContent;
       btnAiTailor.textContent = "Generating...";
       btnAiTailor.disabled = true;
-      
+
       const fd = new FormData();
       fd.append("jd", finalJd);
-      
+
       const nameEl = $("#name");
       if (nameEl && nameEl.value) fd.append("name", nameEl.value.trim());
-      
+
       fd.append("resume", resumeEl.files[0]);
-      
+
       const res = await fetch("/api/generate-email", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
-      
+
       if (!res.ok || !data.ok) throw new Error(data.error || "Failed to generate email");
-      
+
       if (data.body) {
         const bodyEl = $("#body");
         if (bodyEl) {
-             bodyEl.value = data.body;
-             bodyEl.style.height = "auto";
-             bodyEl.style.height = (bodyEl.scrollHeight) + "px";
+          bodyEl.value = data.body;
+          bodyEl.style.height = "auto";
+          bodyEl.style.height = (bodyEl.scrollHeight) + "px";
         }
-        
+
         if (typeof toast === "function") {
-             toast("good", "Email Tailored", "Cover letter generated successfully!");
+          toast("good", "Email Tailored", "Cover letter generated successfully!");
         } else {
-             alert("Email tailored successfully!");
+          alert("Email tailored successfully!");
         }
       } else {
         alert("No email body returned.");
       }
-      
+
     } catch (e) {
       console.error(e);
       alert("Error: " + (e.message || String(e)));
@@ -1716,19 +1659,19 @@ if (tabResumeBuilder) {
     // Hide all
     [panelSend, panelAts, panelHr, panelAuto, panelDefaults, panelSide].forEach(p => p && p.classList.add("hidden"));
     if (panelResumeBuilder) panelResumeBuilder.style.display = "block";
-    
+
     // Deactivate tabs
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     tabResumeBuilder.classList.add("active");
   });
-  
+
   // Update existing tab listeners to hide ResumeBuilder panel
   [tabSend, tabAts, tabHr, tabAuto, tabDefaults].forEach(t => {
-     if(t) {
-        t.addEventListener("click", () => {
-           if(panelResumeBuilder) panelResumeBuilder.style.display = "none";
-        });
-     }
+    if (t) {
+      t.addEventListener("click", () => {
+        if (panelResumeBuilder) panelResumeBuilder.style.display = "none";
+      });
+    }
   });
 }
 
@@ -1738,49 +1681,49 @@ if (rbGenerateBtn) {
   rbGenerateBtn.addEventListener("click", async () => {
     const jd = $("#rbJd")?.value?.trim();
     if (!jd) { alert("Please paste a Job Description first."); return; }
-    
+
     const profile = {
-       name: $("#rbName")?.value,
-       email: $("#rbEmail")?.value,
-       phone: $("#rbPhone")?.value,
-       linkedin: $("#rbLinkedin")?.value,
-       skills: $("#rbSkills")?.value,
-       experience: $("#rbExperience")?.value,
-       education: $("#rbEducation")?.value
+      name: $("#rbName")?.value,
+      email: $("#rbEmail")?.value,
+      phone: $("#rbPhone")?.value,
+      linkedin: $("#rbLinkedin")?.value,
+      skills: $("#rbSkills")?.value,
+      experience: $("#rbExperience")?.value,
+      education: $("#rbEducation")?.value
     };
-    
+
     if (!profile.name || !profile.experience) {
-       alert("Please fill in at least Name and Experience in your Master Profile.");
-       return;
+      alert("Please fill in at least Name and Experience in your Master Profile.");
+      return;
     }
-    
+
     const originalText = rbGenerateBtn.textContent;
     rbGenerateBtn.textContent = "Generating PDF...";
     rbGenerateBtn.disabled = true;
-    
+
     try {
-       const res = await fetch("/api/resume/build", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jd, profile })
-       });
-       
-       if (!res.ok) throw new Error("Generation failed");
-       
-       const blob = await res.blob();
-       const url = window.URL.createObjectURL(blob);
-       const a = document.createElement("a");
-       a.href = url;
-       a.download = `Tailored_Resume_${profile.name.replace(/\s+/g,"_")}.pdf`;
-       document.body.appendChild(a);
-       a.click();
-       a.remove();
-       
+      const res = await fetch("/api/resume/build", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jd, profile })
+      });
+
+      if (!res.ok) throw new Error("Generation failed");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Tailored_Resume_${profile.name.replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
     } catch (e) {
-       alert("Error: " + e.message);
+      alert("Error: " + e.message);
     } finally {
-       rbGenerateBtn.textContent = originalText;
-       rbGenerateBtn.disabled = false;
+      rbGenerateBtn.textContent = originalText;
+      rbGenerateBtn.disabled = false;
     }
   });
 }

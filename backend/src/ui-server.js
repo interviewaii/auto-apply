@@ -16,10 +16,23 @@ const { createTransporter, sendApplicationEmail } = require("./mailer");
 const { buildEmail } = require("./template");
 const { sleep } = require("./utils");
 const { readJson, writeJsonAtomic, ensureDir } = require("./utils");
+const session = require("express-session");
+const userManager = require("./users");
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "job-mailer-secret-key-change-me",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // set to true if using https
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    },
+  })
+);
 
 const upload = multer({
   dest: path.join(os.tmpdir(), "job-mailer-uploads"),
@@ -306,7 +319,7 @@ function textToSimplePdfBuffer(text) {
   return Buffer.from(pdf, "utf8");
 }
 
-let lastOptimizedPdfBuffer = null;
+// let lastOptimizedPdfBuffer = null; // Replaced by map
 
 function buildSuggestionsPageText({ missingKeywords, keyPoints }) {
   const missing = Array.isArray(missingKeywords) ? missingKeywords : [];
@@ -342,13 +355,29 @@ function pdfUniteIfAvailable(inputPdfPath, appendPdfBuffer) {
   }
 }
 
-app.get("/api/ats-optimized.pdf", (_req, res) => {
-  if (!lastOptimizedPdfBuffer) {
+const optimizedPdfBuffers = new Map();
+
+app.get("/api/ats-optimized.pdf", (req, res) => {
+  const username = req.session.username;
+  const buf = optimizedPdfBuffers.get(username);
+  if (!buf) {
     return res.status(404).json({ ok: false, error: "No optimized resume generated yet." });
   }
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", 'attachment; filename="optimized-resume.pdf"');
-  return res.send(lastOptimizedPdfBuffer);
+  return res.send(buf);
+});
+
+app.get("/api/user/resume", (req, res) => {
+  const username = req.session.username;
+  if (!username) return res.status(401).send("Not logged in");
+  const resumePath = userManager.getUserResumePath(username);
+  if (fs.existsSync(resumePath)) {
+    res.setHeader("Content-Type", "application/pdf");
+    res.sendFile(resumePath);
+  } else {
+    res.status(404).send("No resume uploaded yet.");
+  }
 });
 
 app.post("/api/ats-optimize", upload.single("resume"), async (req, res) => {
@@ -390,18 +419,19 @@ app.post("/api/ats-optimize", upload.single("resume"), async (req, res) => {
     });
     const suggestionsPdf = textToSimplePdfBuffer(suggestionsText);
 
-    // If the user uploaded a PDF, preserve their original resume pages and append suggestions as last page.
+    // Use username for storage
+    const username = req.session.username;
     if (filePath && orig.endsWith(".pdf")) {
       const united = pdfUniteIfAvailable(filePath, suggestionsPdf);
       if (united) {
-        lastOptimizedPdfBuffer = united;
+        optimizedPdfBuffers.set(username, united);
       } else {
         // Fallback: return original PDF as-is (still better than "only email"), and keep suggestions in UI.
-        lastOptimizedPdfBuffer = fs.readFileSync(filePath);
+        optimizedPdfBuffers.set(username, fs.readFileSync(filePath));
       }
     } else {
       // For DOCX or pasted text, generate a simple PDF from optimized extracted text.
-      lastOptimizedPdfBuffer = textToSimplePdfBuffer(currentText);
+      optimizedPdfBuffers.set(username, textToSimplePdfBuffer(currentText));
     }
 
     return res.json({
@@ -474,7 +504,7 @@ app.post("/api/generate-email", upload.single("resume"), async (req, res) => {
         if (orig.endsWith(".docx")) resumeText = await extractDocxText(filePath);
         else if (orig.endsWith(".pdf")) resumeText = await extractPdfText(filePath);
       } else {
-        const eff = getEffectiveSettings();
+        const eff = getEffectiveSettings(req.session.username);
         if (eff.resumePath && fs.existsSync(eff.resumePath)) {
           resumeText = await extractPdfText(eff.resumePath);
         }
@@ -495,21 +525,22 @@ app.post("/api/generate-email", upload.single("resume"), async (req, res) => {
 });
 
 // -------------------------
-// UI Defaults (stored locally)
+// UI Defaults (stored per user)
 // -------------------------
-const SETTINGS_PATH = path.resolve(config.paths.root, "data", "ui-settings.json");
-const DEFAULT_RESUME_PATH = path.resolve(config.paths.root, "data", "default-resume.pdf");
 
-function loadUiSettings() {
-  return readJson(SETTINGS_PATH, {});
+function loadUiSettings(username) {
+  if (!username) return {};
+  return readJson(userManager.getUserSettingsPath(username), {});
 }
 
-function saveUiSettings(next) {
-  writeJsonAtomic(SETTINGS_PATH, next || {});
+function saveUiSettings(username, next) {
+  if (!username) return;
+  writeJsonAtomic(userManager.getUserSettingsPath(username), next || {});
 }
 
-function getEffectiveSettings() {
-  const s = loadUiSettings();
+function getEffectiveSettings(username) {
+  const s = loadUiSettings(username);
+  const resumePath = userManager.getUserResumePath(username);
   return {
     smtp: {
       host: String(s.smtpHost || config.smtp.host || "").trim(),
@@ -530,17 +561,18 @@ function getEffectiveSettings() {
     expectedCtc: String(s.expectedCtc || "").trim(),
     currentLocation: String(s.currentLocation || "").trim(),
     preferredLocation: String(s.preferredLocation || "").trim(),
-    resumePath: fs.existsSync(DEFAULT_RESUME_PATH) ? DEFAULT_RESUME_PATH : config.paths.resumePath,
+    resumePath: fs.existsSync(resumePath) ? resumePath : config.paths.resumePath,
     meta: {
       smtpPassSet: Boolean(String(s.smtpPass || "").trim()),
-      resumeSet: fs.existsSync(DEFAULT_RESUME_PATH),
+      resumeSet: fs.existsSync(resumePath),
     },
   };
 }
 
-app.get("/api/settings", (_req, res) => {
-  const raw = loadUiSettings();
-  const eff = getEffectiveSettings();
+app.get("/api/settings", (req, res) => {
+  const username = req.session.username;
+  const raw = loadUiSettings(username);
+  const eff = getEffectiveSettings(username);
   return res.json({
     ok: true,
     settings: {
@@ -567,7 +599,8 @@ app.get("/api/settings", (_req, res) => {
 
 app.post("/api/settings", (req, res) => {
   try {
-    const prev = loadUiSettings();
+    const username = req.session.username;
+    const prev = loadUiSettings(username);
     const smtpPassIncoming = String(req.body.smtpPass || "");
     const next = {
       smtpHost: String(req.body.smtpHost || prev.smtpHost || "").trim(),
@@ -592,7 +625,7 @@ app.post("/api/settings", (req, res) => {
       currentLocation: String(req.body.currentLocation || prev.currentLocation || "").trim(),
       preferredLocation: String(req.body.preferredLocation || prev.preferredLocation || "").trim(),
     };
-    saveUiSettings(next);
+    saveUiSettings(username, next);
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
@@ -602,8 +635,10 @@ app.post("/api/settings", (req, res) => {
 app.post("/api/settings/resume", upload.single("resume"), async (req, res) => {
   try {
     if (!req.file?.path) return res.status(400).json({ ok: false, error: "Resume file is required." });
-    ensureDir(path.dirname(DEFAULT_RESUME_PATH));
-    await fs.promises.copyFile(req.file.path, DEFAULT_RESUME_PATH);
+    const username = req.session.username;
+    const targetPath = userManager.getUserResumePath(username);
+    ensureDir(path.dirname(targetPath));
+    await fs.promises.copyFile(req.file.path, targetPath);
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
@@ -794,99 +829,69 @@ const LOGIN_PATH = path.resolve(UI_DIR, "login.html");
 // -------------------------
 // Auth (simple local login)
 // -------------------------
-const AUTH_USER = String(process.env.UI_AUTH_USER || "").trim();
-const AUTH_PASS = String(process.env.UI_AUTH_PASS || "").trim();
-const AUTH_ENABLED = Boolean(AUTH_USER && AUTH_PASS);
-const COOKIE_NAME = "jm_sid";
-const sessions = new Map(); // sid -> { createdAt, expiresAt }
-const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
-
-function parseCookies(req) {
-  const header = req.headers.cookie || "";
-  const out = {};
-  for (const part of header.split(";")) {
-    const idx = part.indexOf("=");
-    if (idx === -1) continue;
-    const k = part.slice(0, idx).trim();
-    const v = part.slice(idx + 1).trim();
-    if (!k) continue;
-    out[k] = decodeURIComponent(v);
-  }
-  return out;
-}
-
-function createSession() {
-  const sid = crypto.randomBytes(24).toString("hex");
-  const now = Date.now();
-  sessions.set(sid, { createdAt: now, expiresAt: now + SESSION_TTL_MS });
-  return sid;
-}
-
+// -------------------------
+// Auth (Session based)
+// -------------------------
 function isAuthenticated(req) {
-  if (!AUTH_ENABLED) return true;
-  const cookies = parseCookies(req);
-  const sid = cookies[COOKIE_NAME];
-  if (!sid) return false;
-  const s = sessions.get(sid);
-  if (!s) return false;
-  if (Date.now() > s.expiresAt) {
-    sessions.delete(sid);
-    return false;
-  }
-  return true;
+  return !!req.session && !!req.session.username;
 }
 
 function requireAuth(req, res, next) {
   if (isAuthenticated(req)) return next();
   const isApi = req.path.startsWith("/api/");
   if (isApi) return res.status(401).json({ ok: false, error: "Unauthorized. Please login." });
-  return res.redirect("/login");
+  return res.redirect("/login.html");
 }
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.get("/login", (_req, res) => {
-  if (!AUTH_ENABLED) {
-    return res
-      .status(200)
-      .send(
-        "Auth is disabled. Set UI_AUTH_USER and UI_AUTH_PASS in .env (or env.example) to enable login.",
-      );
-  }
-  return res.sendFile(LOGIN_PATH);
+  return res.redirect("/login.html");
 });
 
-app.post("/api/login", (req, res) => {
-  if (!AUTH_ENABLED) return res.json({ ok: true, authEnabled: false });
-  const user = String(req.body.user || "").trim();
-  const pass = String(req.body.pass || "").trim();
-  if (user !== AUTH_USER || pass !== AUTH_PASS) {
-    return res.status(401).json({ ok: false, error: "Invalid username or password." });
+app.post("/api/register", async (req, res) => {
+  try {
+    const { user, pass } = req.body;
+    if (!user || !pass) return res.status(400).json({ ok: false, error: "Username and password required" });
+    await userManager.createUser(user, pass);
+    req.session.username = user;
+    return res.json({ ok: true, username: user });
+  } catch (e) {
+    return res.status(400).json({ ok: false, error: e.message });
   }
-  const sid = createSession();
-  res.setHeader(
-    "Set-Cookie",
-    `${COOKIE_NAME}=${encodeURIComponent(
-      sid,
-    )}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
-  );
-  return res.json({ ok: true, authEnabled: true });
+});
+
+app.post("/api/login", async (req, res) => {
+  const { user, pass } = req.body;
+  if (!user || !pass) return res.status(400).json({ ok: false, error: "Username and password required" });
+
+  const valid = await userManager.validatePassword(user, pass);
+  if (!valid) {
+    return res.status(401).json({ ok: false, error: "Invalid username or password" });
+  }
+
+  req.session.username = user;
+  return res.json({ ok: true, username: user });
 });
 
 app.post("/api/logout", (req, res) => {
-  const cookies = parseCookies(req);
-  const sid = cookies[COOKIE_NAME];
-  if (sid) sessions.delete(sid);
-  res.setHeader("Set-Cookie", `${COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax`);
+  req.session.destroy();
   return res.json({ ok: true });
+});
+
+app.get("/api/me", (req, res) => {
+  if (!isAuthenticated(req)) return res.status(401).json({ ok: false, error: "Not logged in" });
+  return res.json({ ok: true, username: req.session.username });
 });
 
 // Protect everything (UI + API) except health + login endpoints.
 app.use((req, res, next) => {
-  if (!AUTH_ENABLED) return next();
   if (req.path === "/health") return next();
-  if (req.path === "/login") return next();
-  if (req.path === "/api/login") return next();
+  if (req.path === "/login.html" || req.path === "/login") return next();
+  if (req.path === "/register.html") return next();
+  if (req.path === "/styles.css") return next();
+  if (req.path === "/app.js") return next(); // Allow app.js but it checks auth on load
+  if (req.path === "/api/login" || req.path === "/api/register") return next();
   return requireAuth(req, res, next);
 });
 
@@ -1131,7 +1136,7 @@ app.post("/api/auto-apply", async (req, res) => {
     }
 
     const provider = String(req.body.provider || HR_PROVIDER_DEFAULT || "hunter").trim().toLowerCase();
-    const eff = getEffectiveSettings();
+    const eff = getEffectiveSettings(req.session.username);
     const transporter = await createTransporter({ smtp: eff.smtp, from: eff.from });
 
     const campaignResults = [];
@@ -2382,10 +2387,6 @@ const server = app.listen(PORT, HOST, () => {
   const shownHost = HOST === "0.0.0.0" ? "localhost" : HOST;
   console.log(`UI running at http://${shownHost}:${PORT}`);
   console.log(`Env loaded from: ${config.meta?.loadedEnvFile || "(unknown)"}`);
-  console.log(
-    `Auth enabled: ${AUTH_ENABLED ? "yes" : "no"}${AUTH_ENABLED ? "" : " (set UI_AUTH_USER/UI_AUTH_PASS to enable)"
-    }`,
-  );
 });
 
 server.on("error", (err) => {
@@ -2402,14 +2403,14 @@ app.post("/api/resume/build", async (req, res) => {
     const { generateTailoredResume } = require("./services/resume-builder");
     const { jd, profile } = req.body;
     if (!jd || !profile) return res.status(400).json({ error: "Missing JD or Profile" });
-    
+
     console.log("[ResumeBuilder] Generating for:", profile.name);
     const pdfBuffer = await generateTailoredResume({ jd, profile });
-    
+
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "attachment; filename=resume.pdf");
     res.send(pdfBuffer);
-    
+
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
