@@ -6,6 +6,7 @@ const fs = require("fs");
 const { spawnSync } = require("child_process");
 const XLSX = require("xlsx");
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 const mammoth = require("mammoth");
 const pdfParse = require("pdf-parse");
 
@@ -2380,7 +2381,64 @@ app.patch("/api/jobs/:platform/:jobId", (req, res) => {
 // -------------------------
 
 
-// Render (and most PaaS) requires binding to 0.0.0.0 and the port provided in $PORT.
+// --- Auth Routes ---
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ ok: false, error: "Username and password required" });
+    }
+
+    // Check if user exists
+    if (userManager.getUser(username)) {
+      return res.status(400).json({ ok: false, error: "User already exists" });
+    }
+
+    const salt = bcrypt.hashSync(password, 10);
+    const users = userManager.loadUsers();
+
+    users[username] = {
+      password: salt,
+      created: new Date().toISOString(),
+      role: "user" // default role
+    };
+
+    if (userManager.saveUsers(users)) {
+      req.session.username = username;
+      req.session.role = "user";
+      return res.json({ ok: true });
+    } else {
+      return res.status(500).json({ ok: false, error: "Failed to create user" });
+    }
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post("/api/auth/login", (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ ok: false, error: "Missing credentials" });
+  }
+
+  // Debug backdoor for local dev if needed (remove in prod if strict)
+  // if (username === "admin" && password === "admin") ...
+
+  if (userManager.verifyPassword(username, password)) {
+    req.session.username = username;
+    req.session.role = userManager.getUserRole(username);
+    return res.json({ ok: true });
+  } else {
+    return res.status(401).json({ ok: false, error: "Invalid username or password" });
+  }
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  req.session.destroy();
+  res.json({ ok: true });
+});
+
+// Start Server
 const HOST = String(process.env.HOST || process.env.UI_HOST || "0.0.0.0");
 const PORT = Number(process.env.PORT || process.env.UI_PORT || 4545);
 const server = app.listen(PORT, HOST, () => {

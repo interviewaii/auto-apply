@@ -409,6 +409,31 @@
               <button id="rbGenerateBtn" class="btn">🚀 Generate Tailored PDF</button>
             </div>
           </div>
+          <div id="loginOverlay" class="loginOverlay">
+            <div class="loginCard">
+              <div class="loginTitle" id="authTitle">System Access</div>
+              <div class="loginSub">Please authenticate to continue</div>
+
+              <form class="loginForm" id="loginForm">
+                <div class="row">
+                  <label class="label">Username</label>
+                  <input type="text" id="loginUser" placeholder="Enter username" required />
+                </div>
+                <div class="row">
+                  <label class="label">Password</label>
+                  <input type="password" id="loginPass" placeholder="Enter password" required />
+                </div>
+                <button type="submit" class="btn" style="width:100%;margin-top:10px" id="authBtn">
+                  Login <span class="btnSpinner hidden"></span>
+                </button>
+              </form>
+
+              <div style="margin-top:16px;text-align:center;font-size:13px;color:rgba(255,255,255,0.6)">
+                <span id="authToggleText">Need an account?</span>
+                <button class="linkBtn" id="toggleAuthMode">Sign Up</button>
+              </div>
+            </div>
+          </div>
           <div class="card">
             <div class="cardTitle">2. Your Master Profile</div>
             <div class="row twoCol">

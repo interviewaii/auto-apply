@@ -1499,6 +1499,71 @@ jobsTableBody?.addEventListener("click", async (e) => {
   const applyBtn = e.target?.closest?.(".js-apply-job");
   const skipBtn = e.target?.closest?.(".js-skip-job");
 
+  // --- Auth & Init ---
+  let isSignupMode = false;
+  const authTitle = document.getElementById("authTitle");
+  const authBtn = document.getElementById("authBtn");
+  const authToggleText = document.getElementById("authToggleText");
+  const toggleAuthMode = document.getElementById("toggleAuthMode");
+
+  toggleAuthMode?.addEventListener("click", () => {
+    isSignupMode = !isSignupMode;
+    if (isSignupMode) {
+      authTitle.textContent = "Create Account";
+      authBtn.childNodes[0].textContent = "Sign Up "; // keep spinner
+      authToggleText.textContent = "Already have an account?";
+      toggleAuthMode.textContent = "Login";
+    } else {
+      authTitle.textContent = "System Access";
+      authBtn.childNodes[0].textContent = "Login ";
+      authToggleText.textContent = "Need an account?";
+      toggleAuthMode.textContent = "Sign Up";
+    }
+  });
+
+  const loginOverlay = document.getElementById("loginOverlay");
+  const loginForm = document.getElementById("loginForm");
+  const loginUser = document.getElementById("loginUser");
+  const loginPass = document.getElementById("loginPass");
+
+  async function tryLogin(username, password) {
+    // We'll use the same form handler for both logic
+    const endpoint = isSignupMode ? "/api/auth/register" : "/api/auth/login";
+
+    setLoading(true);
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        // Success
+        loginOverlay.classList.add("hidden");
+        // Reload or fetch initial data
+        loadJobStats();
+        loadAllJobs();
+        showToast("good", isSignupMode ? "Account Created" : "Welcome Back", `Logged in as ${username}`);
+      } else {
+        showToast("bad", "Auth Failed", data.error || "Invalid credentials");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("bad", "Network Error", "Could not reach server");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const u = loginUser.value.trim();
+    const p = loginPass.value.trim();
+    if (!u || !p) return;
+    tryLogin(u, p);
+  });
+
   if (applyBtn) {
     const jobId = applyBtn.getAttribute("data-job-id");
     const platform = applyBtn.getAttribute("data-platform");
