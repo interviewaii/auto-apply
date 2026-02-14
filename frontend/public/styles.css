@@ -1,21 +1,21 @@
 :root {
-  --bg0: #03050a;
-  --bg1: #080c18;
-  --card: rgba(255, 255, 255, 0.05);
-  --card2: rgba(255, 255, 255, 0.03);
-  --stroke: rgba(255, 255, 255, 0.1);
-  --stroke2: rgba(255, 255, 255, 0.18);
-  --text: rgba(255, 255, 255, 0.95);
-  --muted: rgba(255, 255, 255, 0.65);
-  --muted2: rgba(255, 255, 255, 0.45);
+  --bg0: #000000;
+  --bg1: #050505;
+  --card: rgba(10, 10, 10, 0.6);
+  --card2: rgba(20, 20, 20, 0.4);
+  --stroke: rgba(255, 255, 255, 0.08);
+  --stroke2: rgba(255, 255, 255, 0.12);
+  --text: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.6);
+  --muted2: rgba(255, 255, 255, 0.4);
   --good: #00ffa3;
   --bad: #ff3d71;
   --warn: #ffaa00;
-  --accent: #8b5cf6;
-  --accent2: #06b6d4;
-  --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  --radius: 24px;
-  --radius2: 16px;
+  --accent: #6d28d9;
+  --accent2: #0ea5e9;
+  --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+  --radius: 20px;
+  --radius2: 12px;
   --mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
@@ -33,10 +33,9 @@ body {
   margin: 0;
   font-family: var(--sans);
   color: var(--text);
-  background: 
-    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 100% 0%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 50% 100%, rgba(0, 255, 163, 0.05) 0%, transparent 50%),
+  background:
+    radial-gradient(circle at 15% 15%, rgba(109, 40, 217, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(14, 165, 233, 0.05) 0%, transparent 40%),
     var(--bg0);
   background-attachment: fixed;
 }
@@ -62,7 +61,15 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .brand {
@@ -132,6 +139,23 @@ body {
   width: 100%;
 }
 
+@media (max-width: 600px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .headerActions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .brand {
+    justify-content: center;
+  }
+}
+
 .hrTwoCol {
   display: grid;
   grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
@@ -144,7 +168,17 @@ body {
 .tabs {
   display: flex;
   gap: 10px;
-  margin: 10px 0 14px;
+  margin: 10px 0 20px;
+  padding-bottom: 5px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+  /* Chrome/Safari */
 }
 
 .tab {
@@ -152,10 +186,11 @@ body {
   border: 1px solid var(--stroke);
   background: rgba(255, 255, 255, 0.03);
   color: var(--muted);
-  padding: 10px 20px;
+  padding: 10px 18px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 500;
+  font-size: 13px;
+  white-space: nowrap;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -175,6 +210,7 @@ body {
   .grid {
     grid-template-columns: 1fr;
   }
+
   .hrTwoCol {
     grid-template-columns: 1fr;
     height: auto;
@@ -186,7 +222,8 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 0; /* important so children can scroll inside */
+  min-height: 0;
+  /* important so children can scroll inside */
 }
 
 #hrResults {
@@ -202,6 +239,11 @@ body {
   box-shadow: var(--shadow);
   padding: 18px 18px 16px;
   backdrop-filter: blur(12px);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--stroke2);
 }
 
 .cardTitle {
@@ -295,14 +337,16 @@ textarea:focus {
   z-index: 2000;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: #0b1020; /* solid (non-transparent) */
+  background: #0b1020;
+  /* solid (non-transparent) */
   backdrop-filter: none;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   overflow: hidden;
 }
 
 .typeaheadMenuInner {
-  max-height: 260px; /* scroll when too many */
+  max-height: 260px;
+  /* scroll when too many */
   overflow: auto;
   padding: 6px;
 }
@@ -337,7 +381,8 @@ textarea:focus {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.62);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: #090d1a; /* solid footer */
+  background: #090d1a;
+  /* solid footer */
 }
 
 .micro {
@@ -721,5 +766,3 @@ code {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.78);
 }
-
-

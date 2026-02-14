@@ -345,8 +345,6 @@ const defResume = $("#defResume");
 const defUploadResumeBtn = $("#defUploadResumeBtn");
 const defSaveBtn = $("#defSaveBtn");
 const defStatus = $("#defStatus");
-const resumePreview = $("#resumePreview");
-const currentUserSpan = $("#currentUser");
 
 function setDefStatus(type, html) {
   if (!defStatus) return;
@@ -386,30 +384,89 @@ async function loadDefaultsIntoUI() {
       bodyInput.value = String(s.defaultBody || "");
     }
 
-
     setDefStatus(
       "empty",
       `Loaded. Saved password: <strong>${s.smtpPassSet ? "yes" : "no"}</strong>. Resume uploaded: <strong>${s.resumeSet ? "yes" : "no"
       }</strong>.`,
     );
   } catch (e) {
-    setDefStatus("bad", `<strong>Failed.</strong><br/>${escapeHtml(String(e?.message || e))}`);
-  }
-
-  // Fetch current user info
-  try {
-    const res = await fetch("/api/me");
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.ok && currentUserSpan) {
-      currentUserSpan.textContent = `Logged in as: ${data.username}`;
-    }
-  } catch { }
-
-  // Refresh resume preview
-  if (resumePreview) {
-    resumePreview.src = `/api/user/resume?t=${Date.now()}`;
+    setDefStatus("bad", `<strong>Failed to load.</strong><br/>${escapeHtml(String(e?.message || e))}`);
   }
 }
+
+defSaveBtn?.addEventListener("click", async () => {
+  try {
+    setDefStatus("empty", "Savingâ€¦");
+    const payload = {
+      smtpHost: String(defSmtpHost?.value || "").trim(),
+      smtpPort: Number(String(defSmtpPort?.value || "").trim() || 0) || null,
+      smtpSecure: String(defSmtpSecure?.value || "false") === "true",
+      smtpUser: String(defSmtpUser?.value || "").trim(),
+      smtpPass: String(defSmtpPass?.value || ""),
+      fromEmail: String(defFromEmail?.value || "").trim(),
+      fromName: String(defFromName?.value || "").trim(),
+      subject: String(defSubject?.value || "").trim(),
+      defaultBody: String(defBody?.value || "").trim(),
+      dateOfBirth: String(defDob?.value || "").trim(),
+      totalExperience: String(defExperience?.value || "").trim(),
+      noticePeriod: String(defNoticePeriod?.value || "").trim(),
+      expectedCtc: String(defExpectedCtc?.value || "").trim(),
+      currentLocation: String(defCurrentLocation?.value || "").trim(),
+      preferredLocation: String(defPreferredLocation?.value || "").trim(),
+    };
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      const err = data.error || `Request failed (${res.status})`;
+      setDefStatus("bad", `<strong>Save failed.</strong><br/>${escapeHtml(err)}`);
+      toast("bad", "Save failed", err);
+      return;
+    }
+    defSmtpPass.value = "";
+    setDefStatus("good", "<strong>Saved.</strong> Defaults updated.");
+    toast("good", "Saved", "Defaults updated");
+  } catch (e) {
+    const msg = String(e?.message || e);
+    setDefStatus("bad", `<strong>Error.</strong><br/>${escapeHtml(msg)}`);
+    toast("bad", "Error", msg);
+  }
+});
+
+defUploadResumeBtn?.addEventListener("click", async () => {
+  const f = defResume?.files?.[0];
+  if (!f) {
+    toast("bad", "Missing file", "Choose a PDF resume first.");
+    return;
+  }
+  if (!String(f.name || "").toLowerCase().endsWith(".pdf")) {
+    toast("bad", "Invalid file", "Resume must be a PDF.");
+    return;
+  }
+  try {
+    setDefStatus("empty", "Uploading resumeâ€¦");
+    const fd = new FormData();
+    fd.set("resume", f);
+    const res = await fetch("/api/settings/resume", { method: "POST", body: fd });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      const err = data.error || `Request failed (${res.status})`;
+      setDefStatus("bad", `<strong>Upload failed.</strong><br/>${escapeHtml(err)}`);
+      toast("bad", "Upload failed", err);
+      return;
+    }
+    setDefStatus("good", "<strong>Uploaded.</strong> Default resume updated.");
+    toast("good", "Uploaded", "Default resume updated");
+    await loadDefaultsIntoUI();
+  } catch (e) {
+    const msg = String(e?.message || e);
+    setDefStatus("bad", `<strong>Error.</strong><br/>${escapeHtml(msg)}`);
+    toast("bad", "Error", msg);
+  }
+});
 
 loadDefaultsIntoUI();
 
