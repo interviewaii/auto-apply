@@ -1499,70 +1499,7 @@ jobsTableBody?.addEventListener("click", async (e) => {
   const applyBtn = e.target?.closest?.(".js-apply-job");
   const skipBtn = e.target?.closest?.(".js-skip-job");
 
-  // --- Auth & Init ---
-  let isSignupMode = false;
-  const authTitle = document.getElementById("authTitle");
-  const authBtn = document.getElementById("authBtn");
-  const authToggleText = document.getElementById("authToggleText");
-  const toggleAuthMode = document.getElementById("toggleAuthMode");
-
-  toggleAuthMode?.addEventListener("click", () => {
-    isSignupMode = !isSignupMode;
-    if (isSignupMode) {
-      authTitle.textContent = "Create Account";
-      authBtn.childNodes[0].textContent = "Sign Up "; // keep spinner
-      authToggleText.textContent = "Already have an account?";
-      toggleAuthMode.textContent = "Login";
-    } else {
-      authTitle.textContent = "System Access";
-      authBtn.childNodes[0].textContent = "Login ";
-      authToggleText.textContent = "Need an account?";
-      toggleAuthMode.textContent = "Sign Up";
-    }
-  });
-
-  const loginOverlay = document.getElementById("loginOverlay");
-  const loginForm = document.getElementById("loginForm");
-  const loginUser = document.getElementById("loginUser");
-  const loginPass = document.getElementById("loginPass");
-
-  async function tryLogin(username, password) {
-    // We'll use the same form handler for both logic
-    const endpoint = isSignupMode ? "/api/auth/register" : "/api/auth/login";
-
-    setLoading(true);
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        // Success
-        loginOverlay.classList.add("hidden");
-        // Reload or fetch initial data
-        loadJobStats();
-        loadAllJobs();
-        showToast("good", isSignupMode ? "Account Created" : "Welcome Back", `Logged in as ${username}`);
-      } else {
-        showToast("bad", "Auth Failed", data.error || "Invalid credentials");
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("bad", "Network Error", "Could not reach server");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  loginForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const u = loginUser.value.trim();
-    const p = loginPass.value.trim();
-    if (!u || !p) return;
-    tryLogin(u, p);
-  });
+  // (Auth logic moved to top-level below)
 
   if (applyBtn) {
     const jobId = applyBtn.getAttribute("data-job-id");
@@ -1774,10 +1711,70 @@ if (btnAiTailor) {
 // --- RESUME BUILDER LOGIC ---
 const tabResumeBuilder = $("#tabResumeBuilder");
 const panelResumeBuilder = $("#panelResumeBuilder");
+const loginOverlay = document.getElementById("loginOverlay");
+
+// Auth form elements for Resume Builder
+const authTitle = document.getElementById("authTitle");
+const authBtn = document.getElementById("authBtn");
+const authToggleText = document.getElementById("authToggleText");
+const toggleAuthMode = document.getElementById("toggleAuthMode");
+const loginForm = document.getElementById("loginForm");
+const loginUser = document.getElementById("loginUser");
+const loginPass = document.getElementById("loginPass");
+
+let isSignupMode = false;
+
+// Toggle Login/Signup
+toggleAuthMode?.addEventListener("click", () => {
+  isSignupMode = !isSignupMode;
+  if (isSignupMode) {
+    authTitle.textContent = "Create Account";
+    authBtn.childNodes[0].textContent = "Sign Up ";
+    authToggleText.textContent = "Already have an account?";
+    toggleAuthMode.textContent = "Login";
+  } else {
+    authTitle.textContent = "System Access";
+    authBtn.childNodes[0].textContent = "Login ";
+    authToggleText.textContent = "Need an account?";
+    toggleAuthMode.textContent = "Sign Up";
+  }
+});
+
+// Handle Login/Register Submission
+loginForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const u = loginUser?.value.trim();
+  const p = loginPass?.value.trim();
+  if (!u || !p) return;
+
+  const endpoint = isSignupMode ? "/api/auth/register" : "/api/auth/login";
+
+  if (authBtn) authBtn.disabled = true;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: u, pass: p }) // Fixed payload keys
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok && data.ok) {
+      if (loginOverlay) loginOverlay.classList.add("hidden");
+      toast("good", isSignupMode ? "Account Created" : "Welcome Back", `Logged in as ${u}`);
+    } else {
+      toast("bad", "Auth Failed", data.error || "Invalid credentials");
+    }
+  } catch (err) {
+    toast("bad", "Error", String(err.message || err));
+  } finally {
+    if (authBtn) authBtn.disabled = false;
+  }
+});
 
 // Tab Switching Logic including new tab
 if (tabResumeBuilder) {
-  tabResumeBuilder.addEventListener("click", () => {
+  tabResumeBuilder.addEventListener("click", async () => {
     // Hide all
     [panelSend, panelAts, panelHr, panelAuto, panelDefaults, panelSide].forEach(p => p && p.classList.add("hidden"));
     if (panelResumeBuilder) panelResumeBuilder.style.display = "block";
@@ -1785,6 +1782,21 @@ if (tabResumeBuilder) {
     // Deactivate tabs
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     tabResumeBuilder.classList.add("active");
+
+    // Check Auth Status immediately
+    try {
+      const res = await fetch("/api/me");
+      if (res.ok) {
+        // User is logged in, hide overlay
+        if (loginOverlay) loginOverlay.classList.add("hidden");
+      } else {
+        // Not logged in or session expired
+        if (loginOverlay) loginOverlay.classList.remove("hidden");
+      }
+    } catch {
+      // Offline/Error, safe to show login
+      if (loginOverlay) loginOverlay.classList.remove("hidden");
+    }
   });
 
   // Update existing tab listeners to hide ResumeBuilder panel

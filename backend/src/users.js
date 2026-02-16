@@ -3,6 +3,13 @@ const path = require("path");
 const bcrypt = require("bcryptjs");
 
 const USERS_FILE = path.resolve(__dirname, "../../data/users.json");
+const USERS_DATA_DIR = path.resolve(__dirname, "../../data/users");
+
+function ensureDir(dir) {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+}
 
 function loadUsers() {
     if (!fs.existsSync(USERS_FILE)) {
@@ -18,6 +25,7 @@ function loadUsers() {
 
 function saveUsers(users) {
     try {
+        ensureDir(path.dirname(USERS_FILE));
         fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
         return true;
     } catch (e) {
@@ -31,10 +39,57 @@ function getUser(username) {
     return users[username];
 }
 
-function verifyPassword(username, password) {
+// --- Core Auth Functions ---
+
+async function createUser(username, password) {
+    const users = loadUsers();
+    if (users[username]) {
+        throw new Error("User already exists");
+    }
+    if (!username || username.length < 2) {
+        throw new Error("Username must be at least 2 characters");
+    }
+    if (!password || password.length < 3) {
+        throw new Error("Password must be at least 3 characters");
+    }
+
+    const hash = bcrypt.hashSync(password, 10);
+    users[username] = {
+        password: hash,
+        created: new Date().toISOString(),
+        role: "user",
+        banned: false,
+        limits: {
+            dailyEmails: 50,
+            dailyResumes: 10
+        },
+        usage: {
+            dailyCount: 0,
+            monthlyCount: 0,
+            lastReset: new Date().toISOString()
+        }
+    };
+
+    if (!saveUsers(users)) {
+        throw new Error("Failed to save user");
+    }
+
+    // Create per-user data directory
+    const userDir = path.join(USERS_DATA_DIR, username);
+    ensureDir(userDir);
+
+    return users[username];
+}
+
+function validatePassword(username, password) {
     const user = getUser(username);
     if (!user || !user.password) return false;
     return bcrypt.compareSync(password, user.password);
+}
+
+// Alias for backward compat
+function verifyPassword(username, password) {
+    return validatePassword(username, password);
 }
 
 function getUserRole(username) {
@@ -42,18 +97,67 @@ function getUserRole(username) {
     return user ? user.role || "user" : null;
 }
 
+function getUserSettingsPath(username) {
+    return path.join(USERS_DATA_DIR, username, "settings.json");
+}
+
+function getUserResumePath(username) {
+    const user = getUser(username);
+    if (user && user.resumePath) return user.resumePath;
+    return path.resolve(__dirname, "../../assets", `${username}_resume.pdf`);
+}
+
+// --- Ban System ---
+
+function isBanned(username) {
+    const user = getUser(username);
+    return user ? !!user.banned : false;
+}
+
+function banUser(username) {
+    const users = loadUsers();
+    if (!users[username]) return false;
+    users[username].banned = true;
+    return saveUsers(users);
+}
+
+function unbanUser(username) {
+    const users = loadUsers();
+    if (!users[username]) return false;
+    users[username].banned = false;
+    return saveUsers(users);
+}
+
+// --- Limits ---
+
+function setUserLimits(username, limits) {
+    const users = loadUsers();
+    if (!users[username]) return false;
+    users[username].limits = {
+        dailyEmails: Number(limits.dailyEmails) || 50,
+        dailyResumes: Number(limits.dailyResumes) || 10
+    };
+    return saveUsers(users);
+}
+
+function getUserLimits(username) {
+    const user = getUser(username);
+    if (!user) return null;
+    return user.limits || { dailyEmails: 50, dailyResumes: 10 };
+}
+
+// --- Usage Tracking ---
+
 function getUserUsage(username) {
     const user = getUser(username);
     if (!user) return null;
 
-    // Initialize usage if missing
     if (!user.usage) {
         user.usage = {
             dailyCount: 0,
             monthlyCount: 0,
             lastReset: new Date().toISOString()
         };
-        // We don't save here to avoid read/write loops, but UI should handle it
     }
 
     return user.usage;
@@ -89,40 +193,53 @@ function incrementUserUsage(username) {
     user.usage.monthlyCount++;
     user.usage.lastReset = now.toISOString();
 
-    // Save back
-    try {
-        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-        return true;
-    } catch (e) {
-        console.error("Failed to update user usage:", e);
-        return false;
+    return saveUsers(users);
+}
+
+// --- Admin: Get All Users ---
+
+function getAllUsers() {
+    const users = loadUsers();
+    const result = [];
+    for (const [username, data] of Object.entries(users)) {
+        result.push({
+            username,
+            role: data.role || "user",
+            created: data.created || "unknown",
+            banned: !!data.banned,
+            limits: data.limits || { dailyEmails: 50, dailyResumes: 10 },
+            usage: data.usage || { dailyCount: 0, monthlyCount: 0 }
+        });
     }
+    return result;
 }
 
-function getUserResumePath(username) {
-    // Assuming resumes are stored in assets/resumes/<username>
-    // or just assets/<username>_resume.pdf based on previous context.
-    // For now, let's map it to a standard location.
-    // Check known locations or config.
-    // The config.js has a RESUME_PATH env var, but that's global.
-    // For multi-user, we might need a per-user path.
-    // Let's implement a simple lookup.
-    const user = getUser(username);
-    if (user && user.resumePath) return user.resumePath;
+// --- Admin: Delete User ---
 
-    // Fallback/Default structure
-    // Adjust based on where uploads go
-    return path.resolve(__dirname, "../../assets", `${username}_resume.pdf`);
+function deleteUser(username) {
+    const users = loadUsers();
+    if (!users[username]) return false;
+    delete users[username];
+    return saveUsers(users);
 }
-
 
 module.exports = {
     loadUsers,
     saveUsers,
     getUser,
+    createUser,
+    validatePassword,
     verifyPassword,
     getUserRole,
+    getUserSettingsPath,
+    getUserResumePath,
     getUserUsage,
     incrementUserUsage,
-    getUserResumePath
+    isBanned,
+    banUser,
+    unbanUser,
+    setUserLimits,
+    getUserLimits,
+    getAllUsers,
+    deleteUser
 };

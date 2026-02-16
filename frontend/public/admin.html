@@ -4,666 +4,680 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Job Mailer â€” Send Application</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <title>JobReach — Admin Panel</title>
+  <style>
+    :root {
+      --bg0: #0a0610;
+      --bg1: #120b1d;
+      --card: rgba(255, 255, 255, 0.07);
+      --card2: rgba(255, 255, 255, 0.04);
+      --stroke: rgba(255, 90, 122, 0.2);
+      --stroke2: rgba(255, 255, 255, 0.1);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.6);
+      --accent: #ff5a7a;
+      --accent2: #ff9a5c;
+      --green: #34d399;
+      --green-bg: rgba(52, 211, 153, 0.12);
+      --red: #ff5a7a;
+      --red-bg: rgba(255, 90, 122, 0.12);
+      --yellow: #fbbf24;
+      --yellow-bg: rgba(251, 191, 36, 0.12);
+      --blue: #60a5fa;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --radius: 16px;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    body {
+      font-family: var(--sans);
+      color: var(--text);
+      background: radial-gradient(1200px 900px at 20% 10%, rgba(255, 90, 122, 0.1), transparent 60%),
+        radial-gradient(900px 700px at 80% 30%, rgba(255, 154, 92, 0.08), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    .shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      background: linear-gradient(135deg, rgba(255, 90, 122, 0.9), rgba(255, 154, 92, 0.8));
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 780;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--accent2);
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* Buttons */
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn:hover {
+      opacity: 0.88;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0a0610;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid var(--stroke2);
+    }
+
+    .btn-danger {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(255, 90, 122, 0.3);
+    }
+
+    .btn-success {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--stroke2);
+      border-radius: var(--radius);
+      padding: 18px;
+      backdrop-filter: blur(8px);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .stat-value.green {
+      color: var(--green);
+    }
+
+    .stat-value.red {
+      color: var(--red);
+    }
+
+    .stat-value.blue {
+      color: var(--blue);
+    }
+
+    .stat-value.yellow {
+      color: var(--yellow);
+    }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--stroke2);
+      border-radius: var(--radius);
+      padding: 24px;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .card-hint {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 10px 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--stroke2);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      vertical-align: middle;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-active {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+    }
+
+    .badge-banned {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(255, 90, 122, 0.25);
+    }
+
+    .badge-admin {
+      background: rgba(251, 191, 36, 0.12);
+      color: var(--yellow);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+
+    .badge-user {
+      background: rgba(96, 165, 250, 0.12);
+      color: var(--blue);
+      border: 1px solid rgba(96, 165, 250, 0.25);
+    }
+
+    /* Action buttons in table */
+    .action-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      place-items: center;
+    }
+
+    .modal-overlay.active {
+      display: grid;
+    }
+
+    .modal {
+      background: #1a1025;
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: min(420px, 92vw);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .modal-user {
+      color: var(--accent2);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 12px 0 6px;
+    }
+
+    .modal input[type="number"] {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--stroke2);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .modal input[type="number"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255, 90, 122, 0.1);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    /* Status message */
+    .status-msg {
+      margin-top: 16px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .status-msg.show {
+      display: block;
+    }
+
+    .status-msg.good {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+    }
+
+    .status-msg.bad {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(255, 90, 122, 0.25);
+    }
+
+    /* Loading spinner */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--stroke2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+  </style>
 </head>
 
 <body>
-  <div class="bg"></div>
   <div class="shell">
+    <!-- Header -->
     <header class="header">
       <div class="brand">
-        <div class="logo">JR</div>
+        <div class="logo">🛡️</div>
         <div>
-          <div class="title">JobReach</div>
-          <div class="subtitle">AI-Powered Job Application Suite</div>
+          <div class="brand-title">JobReach Admin</div>
+          <div class="brand-sub">User Management & Controls</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <button class="navBtn" id="tabDefaults">
-          <span class="icon">âš™ï¸</span> Settings
-        </button>
-        <button class="navBtn hidden" id="tabAdmin"
-          style="margin-top:auto;background:rgba(255,90,122,0.1);border-color:rgba(255,90,122,0.3)">
-          <span class="icon">ðŸ›¡ï¸</span> Admin
-        </button>
-        <div class="pill" aria-label="Status">
-          <span class="dot"></span>
-          <span>System Online</span>
-        </div>
-        <span id="currentUser" style="font-size:13px;color:rgba(255,255,255,0.6);margin:0 5px"></span>
-        <button id="logoutBtn" class="btn secondary" type="button" style="min-width:auto;padding:10px 16px">
-          Logout
-        </button>
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-sm" id="refreshBtn">🔄 Refresh</button>
+        <button class="btn btn-danger btn-sm" id="logoutBtn">Logout</button>
       </div>
     </header>
 
-    <div class="tabs">
-      <button class="tab active" id="tabSend" type="button">Direct Send</button>
-      <button class="tab" id="tabAts" type="button">ATS Optimizer</button>
-      <button class="tab" id="tabHr" type="button">HR Finder</button>
-      <button class="tab" id="tabAuto" type="button">Auto Apply</button>
-      <button class="tab" id="tabResumeBuilder">📄 Resume Builder</button>
+    <!-- Stats -->
+    <div class="stats" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value blue" id="statTotal">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Users</div>
+        <div class="stat-value green" id="statActive">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Banned Users</div>
+        <div class="stat-value red" id="statBanned">—</div>
+      </div>
     </div>
 
-    <main class="grid">
-      <section class="card tabPanel" id="panelSend">
-        <div class="cardTitle">Compose & Send</div>
-        <div class="cardHint">
-          <strong>Email is mandatory.</strong> Subject / Body / Resume are optional. If you leave
-          them empty, defaults will be used.
-        </div>
+    <!-- Users Table -->
+    <div class="card">
+      <div class="card-title">Registered Users</div>
+      <div class="card-hint">Manage user accounts, set limits, and ban/unban users.</div>
 
-        <form id="sendForm" class="form" autocomplete="off">
-          <div class="row">
-            <label class="label" for="email">Recipient email <span class="req">*</span></label>
-            <input id="email" name="email" type="email" placeholder="hr@company.com" required />
-          </div>
-
-          <div class="row twoCol">
-            <div>
-              <label class="label" for="name">Recipient name (optional)</label>
-              <input id="name" name="name" type="text" placeholder="HR / Recruiter name" />
-            </div>
-            <div>
-              <label class="label" for="subject">Subject (optional)</label>
-              <input id="subject" name="subject" type="text"
-                placeholder="Application for MERN Stack Developer Roleâ€¦" />
-            </div>
-          </div>
-
-          <div class="row">
-            <label class="label" for="body">Body (optional)</label>
-            <textarea id="body" name="body" rows="9"
-              placeholder="If empty, the default application template will be used."></textarea>
-            <div class="micro">
-              Tip: leave body empty to use your default template. Add custom body only for this one
-              email.
-            </div>
-          </div>
-
-          <div class="row">
-            <label class="label">Resume (optional)</label>
-            <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload resume">
-              <input id="resume" name="resume" type="file" accept=".pdf" />
-              <div class="dzInner">
-                <div class="dzIcon">â¬†</div>
-                <div class="dzText">
-                  <div class="dzTitle">Drag & drop PDF here</div>
-                  <div class="dzSub">or click to choose file (PDF only)</div>
-                </div>
-              </div>
-              <div id="filePill" class="filePill hidden">
-                <span id="fileName"></span>
-                <button id="clearFile" type="button" class="linkBtn">Remove</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button id="sendBtn" class="btn" type="submit">
-              <span class="btnLabel">Send Email</span>
-              <span class="btnSpinner hidden" aria-hidden="true"></span>
-            </button>
-            <button id="aiTailorBtn" class="btn secondary" type="button" title="Tailor email body using AI based on JD">
-              âœ¨ AI Tailor
-            </button>
-            <button id="resetBtn" class="btn secondary" type="button" style="min-width:auto">Reset</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="tabPanel hidden" id="panelAts">
-        <div class="hrTwoCol">
-          <section class="card">
-            <div class="cardTitle">ATS Scoring & Optimization</div>
-            <div class="cardHint">
-              Paste the <strong>Job Description</strong> and upload your <strong>Resume</strong> to see your ATS score
-              and get an optimized version.
-            </div>
-            <div class="row">
-              <label class="label" for="atsJd">Job Description</label>
-              <textarea id="atsJd" rows="12" placeholder="Paste the full job description here..."></textarea>
-            </div>
-            <div class="row">
-              <label class="label">Resume (PDF/DOCX)</label>
-              <input id="atsResume" type="file" accept=".pdf,.docx" />
-            </div>
-            <div class="actions">
-              <button id="atsScoreBtn" class="btn secondary" type="button">Check Score</button>
-              <button id="atsOptimizeBtn" class="btn" type="button">Optimize Resume</button>
-            </div>
-          </section>
-          <section class="card">
-            <div class="cardTitle">Results & Insights</div>
-            <div id="atsResults" class="status empty">Score and suggestions will appear here.</div>
-            <div id="atsDownloadWrap" class="hidden" style="margin-top: 15px;">
-              <a id="atsDownloadBtn" class="dl" href="#" target="_blank">Download Optimized Resume</a>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <section class="tabPanel hidden" id="panelHr">
-        <div class="hrTwoCol">
-          <section class="card" id="hrFormCard">
-            <div class="cardTitle">HR / Talent Acquisition Finder</div>
-            <div class="cardHint">
-              Enter a company name or domain and get a list of <strong>HR / Talent Acquisition</strong> emails.
-              (Requires server API keys to be configured.)
-            </div>
-
-            <div class="row">
-              <label class="label" for="company">Company name (optional)</label>
-              <div class="typeahead" id="companyTypeahead">
-                <input id="company" type="text" placeholder="e.g. TCS, Infosys, Google" autocomplete="off" />
-                <div id="companyDropdown" class="typeaheadMenu hidden" role="listbox"></div>
-              </div>
-            </div>
-
-            <div class="row">
-              <label class="label" for="domain">Company domain (recommended)</label>
-              <input id="domain" type="text" placeholder="e.g. company.com" />
-            </div>
-
-            <div class="row">
-              <label class="label" for="provider">Provider</label>
-              <select id="provider">
-                <option value="hunter" selected>Hunter</option>
-                <option value="apollo">Apollo</option>
-              </select>
-              <div class="micro">
-                Apollo here means <strong>Apollo.io</strong> (people/contact database), not Apollo GraphQL (rover).
-              </div>
-            </div>
-
-            <div class="actions">
-              <button id="hrSearchBtn" class="btn" type="button">Search</button>
-            </div>
-          </section>
-
-          <section class="card" id="hrFoundCard">
-            <div class="cardTitle">Found contacts</div>
-            <div class="cardHint">Results will appear here after you search.</div>
-            <div id="hrResults" class="status empty">Search results will appear here.</div>
-          </section>
-        </div>
-      </section>
-
-      <section class="tabPanel hidden" id="panelAuto">
-        <!-- Configuration Card -->
-        <section class="card" style="margin-bottom:20px">
-          <div class="cardTitle">Job Search Configuration</div>
-          <div class="cardHint">
-            Configure your job search criteria and platform credentials
-          </div>
-
-          <!-- Search Criteria -->
-          <div class="row">
-            <label class="label" for="jobKeywords">Job Keywords <span class="req">*</span></label>
-            <input id="jobKeywords" type="text" placeholder="e.g., MERN Stack Developer, Full Stack" />
-            <div class="micro">Comma-separated keywords to search for</div>
-          </div>
-
-          <div class="row twoCol">
-            <div>
-              <label class="label" for="jobLocation">Location</label>
-              <input id="jobLocation" type="text" placeholder="e.g., Mumbai, Bangalore" />
-            </div>
-            <div>
-              <label class="label" for="jobExperience">Experience (years)</label>
-              <input id="jobExperience" type="text" placeholder="e.g., 2-5" />
-            </div>
-          </div>
-
-          <div class="row twoCol">
-            <div>
-              <label class="label" for="jobPostedWithin">Posted Within</label>
-              <select id="jobPostedWithin">
-                <option value="1" selected>Last 1 Day</option>
-                <option value="2">Last 2 Days</option>
-                <option value="3">Last 3 Days</option>
-                <option value="4">Last 4 Days</option>
-                <option value="5">Last 5 Days</option>
-                <option value="7">Last 7 Days</option>
-                <option value="15">Last 15 Days</option>
-                <option value="30">Last 30 Days</option>
-              </select>
-            </div>
-            <div>
-              <label class="label" for="jobRemoteOnly">Remote Only</label>
-              <select id="jobRemoteOnly">
-                <option value="true" selected>Yes</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="divider"></div>
-
-          <!-- Platform Selection -->
-          <div class="cardTitle">Platform Settings</div>
-          <div class="row">
-            <label class="label" for="jobPlatform">Select Platform</label>
-            <select id="jobPlatform">
-              <option value="naukri" selected>Naukri.com</option>
-              <option value="glassdoor">Glassdoor</option>
-              <option value="indeed">Indeed</option>
-            </select>
-          </div>
-
-          <!-- Platform Credentials -->
-          <div id="platformCredentials">
-            <div class="row">
-              <label class="label" for="platformEmail">Platform Email</label>
-              <input id="platformEmail" type="email" placeholder="your@email.com" />
-            </div>
-            <div class="row">
-              <label class="label" for="platformPassword">Platform Password</label>
-              <input id="platformPassword" type="password" placeholder="Password" />
-              <div class="micro">Credentials stored locally for auto-apply</div>
-            </div>
-          </div>
-
-          <div class="row twoCol">
-            <div>
-              <label class="label" for="maxApplies">Max Applies/Day</label>
-              <input id="maxApplies" type="number" value="30" min="1" max="100" />
-            </div>
-            <div>
-              <label class="label" for="headlessMode">Browser Mode</label>
-              <select id="headlessMode">
-                <option value="false" selected>Visible (for testing)</option>
-                <option value="true">Headless (faster)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button id="saveJobConfig" class="btn" type="button">Save Configuration</button>
-            <button id="loadJobConfig" class="btn secondary" type="button">Load Config</button>
-            <button id="testCredentials" class="btn secondary" type="button">ðŸ” Test Credentials</button>
-          </div>
-
-          <div id="jobConfigStatus" class="status empty"></div>
-          <div id="credentialTestStatus" class="status empty" style="margin-top:10px;display:none"></div>
-        </section>
-
-        <!-- Statistics Card -->
-        <section class="card" style="margin-bottom:20px">
-          <div class="cardTitle">Job Statistics</div>
-          <div id="jobStats" class="status empty">
-            <div
-              style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin-bottom:15px">
-              <div style="padding:15px;background:#f0f7ff;border-radius:8px">
-                <div style="font-size:12px;color:#666;margin-bottom:5px">Total Jobs</div>
-                <div id="statTotal" style="font-size:24px;font-weight:bold;color:#0066cc">0</div>
-              </div>
-              <div style="padding:15px;background:#f0fff4;border-radius:8px">
-                <div style="font-size:12px;color:#666;margin-bottom:5px">Pending</div>
-                <div id="statPending" style="font-size:24px;font-weight:bold;color:#059669">0</div>
-              </div>
-              <div style="padding:15px;background:#fff7ed;border-radius:8px">
-                <div style="font-size:12px;color:#666;margin-bottom:5px">Applied</div>
-                <div id="statApplied" style="font-size:24px;font-weight:bold;color:#ea580c">0</div>
-              </div>
-              <div style="padding:15px;background:#fef2f2;border-radius:8px">
-                <div style="font-size:12px;color:#666;margin-bottom:5px">Applied Today</div>
-                <div id="statToday" style="font-size:24px;font-weight:bold;color:#dc2626">0</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="cardTitle">Quick Actions</div>
-          <div class="cardHint">Scrape jobs from the selected platform and auto-apply to matches</div>
-
-          <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap">
-            <button id="scrapeJobsBtn" class="btn" type="button">
-              ðŸ” Scrape Jobs Now
-            </button>
-            <button id="autoApplyBtn" class="btn secondary" type="button">
-              âš¡ Auto-Apply to Pending Jobs
-            </button>
-            <button id="refreshStatsBtn" class="btn secondary" type="button">
-              ðŸ“Š Refresh Statistics
-            </button>
-            <button id="clearJobsBtn" class="btn secondary" type="button" style="border-color:#dc2626;color:#dc2626">
-              ðŸ—‘ï¸ Clear Job Database
-            </button>
-          </div>
-
-          <div id="jobActionStatus" class="status empty">Click "Scrape Jobs Now" to start finding jobs</div>
-        </section>
-
-        <!-- Job Listings Card -->
-        <section class="card">
-          <div class="cardTitle">Job Listings</div>
-          <div class="row">
-            <label class="label" style="margin-bottom:8px">Filter Jobs:</label>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-              <div style="flex:1;min-width:200px">
-                <label class="label" for="filterStatus" style="font-size:12px;margin-bottom:4px">Status</label>
-                <select id="filterStatus" style="width:100%">
-                  <option value="">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="applied">Applied</option>
-                  <option value="failed">Failed</option>
-                  <option value="skipped">Skipped</option>
-                </select>
-              </div>
-              <div style="flex:1;min-width:200px">
-                <label class="label" for="filterPlatform" style="font-size:12px;margin-bottom:4px">Platform</label>
-                <select id="filterPlatform" style="width:100%">
-                  <option value="">All Platforms</option>
-                  <option value="naukri">Naukri</option>
-                  <option value="glassdoor">Glassdoor</option>
-                  <option value="indeed">Indeed</option>
-                </select>
-              </div>
-              <div style="flex:1;min-width:200px">
-                <label class="label" for="filterApplyType" style="font-size:12px;margin-bottom:4px">Application
-                  Type</label>
-                <select id="filterApplyType" style="width:100%">
-                  <option value="">All Types</option>
-                  <option value="auto">Auto Apply</option>
-                  <option value="manual">Manual Apply (Company Site)</option>
-                </select>
-              </div>
-              <button id="refreshJobsBtn" class="btn secondary" type="button" style="min-width:120px">
-                Refresh List
-              </button>
-            </div>
-          </div>
-
-          <div id="jobsTableWrap" style="overflow-x:auto;margin-top:15px;position:relative;z-index:1">
-            <table id="jobsTable"
-              style="width:100%;border-collapse:collapse;min-width:800px;display:none;background:white">
-              <thead>
-                <tr style="background:#f5f5f5;border-bottom:2px solid #ddd">
-                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Platform</th>
-                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Job Title</th>
-                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Company</th>
-                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Location</th>
-                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Status</th>
-                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Posted</th>
-                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="jobsTableBody"></tbody>
-            </table>
-            <div id="jobsEmptyState" class="status empty" style="position:relative;z-index:1">
-              No jobs found. Click "Scrape Jobs Now" to fetch jobs.
-            </div>
-          </div>
-        </section>
-      </section>
-
-
-
-      <div id="panelResumeBuilder" class="tab-content" style="display: none;">
-        <div class="row twoCol">
-          <div class="card">
-            <div class="cardTitle">1. Target Job</div>
-            <label class="label">Job Description (JD)</label>
-            <textarea id="rbJd" placeholder="Paste the JD here. We will tailor your resume to match this."
-              style="height: 120px;"></textarea>
-            <div style="margin-top:10px;text-align:right">
-              <button id="rbGenerateBtn" class="btn">🚀 Generate Tailored PDF</button>
-            </div>
-          </div>
-          <div class="card">
-            <div class="cardTitle">2. Your Master Profile</div>
-            <div class="row twoCol">
-              <div><label class="label">Full Name</label><input type="text" id="rbName" placeholder="John Doe"></div>
-              <div><label class="label">Email</label><input type="email" id="rbEmail" placeholder="email@example.com">
-              </div>
-            </div>
-            <div class="row twoCol">
-              <div><label class="label">Phone</label><input type="text" id="rbPhone" placeholder="+1 234..."></div>
-              <div><label class="label">LinkedIn</label><input type="text" id="rbLinkedin"
-                  placeholder="linkedin.com/in/..."></div>
-            </div>
-            <label class="label">Skills (Comma separated)</label>
-            <textarea id="rbSkills" placeholder="React, Node.js, Python..." style="height:60px"></textarea>
-            <label class="label">Experience Summary (Raw text/bullets)</label>
-            <textarea id="rbExperience" placeholder="- Senior Dev at X (2020-Present)..."
-              style="height:100px"></textarea>
-            <label class="label">Education</label>
-            <textarea id="rbEducation" placeholder="BS CS, University of Tech (2019)" style="height:60px"></textarea>
-            <div style="margin-top:10px"><button id="rbSaveProfileBtn" class="btn secondary"> Save Master
-                Profile</button></div>
-          </div>
-        </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Usage (Day)</th>
+              <th>Limits (Day)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr>
+              <td colspan="7" class="loading">
+                <div class="spinner"></div><br>Loading users…
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <section class="card tabPanel hidden" id="panelDefaults">
-        <div class="cardTitle">Defaults (No code changes needed)</div>
-        <div class="cardHint">
-          Set your own SMTP email/app-password, default subject/body, and upload a default resume.
-          After saving, the app will send emails using these settings.
-        </div>
-
-        <div class="row twoCol">
-          <div>
-            <label class="label" for="defSmtpHost">SMTP host</label>
-            <input id="defSmtpHost" type="text" placeholder="smtp.gmail.com" />
-          </div>
-          <div>
-            <label class="label" for="defSmtpPort">SMTP port</label>
-            <input id="defSmtpPort" type="text" placeholder="587" />
-          </div>
-        </div>
-
-        <div class="row twoCol">
-          <div>
-            <label class="label" for="defSmtpSecure">SMTP secure</label>
-            <select id="defSmtpSecure">
-              <option value="false" selected>false (STARTTLS / 587)</option>
-              <option value="true">true (SSL / 465)</option>
-            </select>
-          </div>
-          <div>
-            <label class="label" for="defFromName">From name</label>
-            <input id="defFromName" type="text" placeholder="Your name" />
-          </div>
-        </div>
-
-        <div class="row twoCol">
-          <div>
-            <label class="label" for="defSmtpUser">SMTP user / email</label>
-            <input id="defSmtpUser" type="text" placeholder="you@gmail.com" />
-          </div>
-          <div>
-            <label class="label" for="defSmtpPass">SMTP app password</label>
-            <input id="defSmtpPass" type="password" placeholder="(leave blank to keep saved password)" />
-          </div>
-        </div>
-
-        <div class="row twoCol">
-          <div>
-            <label class="label" for="defFromEmail">From email</label>
-            <input id="defFromEmail" type="text" placeholder="you@gmail.com (optional if same as SMTP user)" />
-          </div>
-          <div>
-            <label class="label" for="defSubject">Default subject</label>
-            <input id="defSubject" type="text" placeholder="Application for ..." />
-          </div>
-        </div>
-
-        <div class="row twoCol">
-          <div>
-            <label class="label" for="defDob">Date of Birth (DD/MM/YYYY)</label>
-            <input id="defDob" type="text" placeholder="e.g. 15/06/1998" />
-          </div>
-          <div>
-            <label class="label" for="defExperience">Total Experience (Years)</label>
-            <input id="defExperience" type="text" placeholder="e.g. 3" />
-          </div>
-        </div>
-
-        <div class="row twoCol">
-          <div>
-            <label class="label" for="defNoticePeriod">Notice Period (Days)</label>
-            <input id="defNoticePeriod" type="text" placeholder="e.g. 30" />
-          </div>
-          <div>
-            <label class="label" for="defExpectedCtc">Expected CTC (Lakhs)</label>
-            <input id="defExpectedCtc" type="text" placeholder="e.g. 12" />
-          </div>
-        </div>
-
-        <div class="row twoCol">
-          <div>
-            <label class="label" for="defCurrentLocation">Current Location</label>
-            <input id="defCurrentLocation" type="text" placeholder="e.g. Pune" />
-          </div>
-          <div>
-            <label class="label" for="defPreferredLocation">Preferred Location</label>
-            <input id="defPreferredLocation" type="text" placeholder="e.g. Pune, Remote" />
-          </div>
-        </div>
-
-        <div class="row">
-          <label class="label" for="defBody">Default body (optional)</label>
-          <textarea id="defBody" rows="10" placeholder="If empty, the built-in template is used."></textarea>
-          <div class="micro">This will be used as your email content. (No hard-coded template.)</div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="cardTitle">Default Resume</div>
-        <div class="cardHint">
-          Upload a PDF resume once. This will be used when you donâ€™t upload a resume in Send/Bulk.
-        </div>
-        <div class="row">
-          <label class="label" for="defResume">Resume (PDF)</label>
-          <input id="defResume" type="file" accept=".pdf" />
-          <div class="actions">
-            <button id="defUploadResumeBtn" class="btn secondary" type="button">Upload resume</button>
-            <button id="defSaveBtn" class="btn" type="button">Save defaults</button>
-          </div>
-          <div id="defStatus" class="status empty">Load and update your defaults here.</div>
-        </div>
-
-        <div class="divider"></div>
-        <div class="cardTitle">Resume Preview</div>
-        <div class="cardHint">Your currently uploaded default resume.</div>
-        <iframe id="resumePreview"
-          style="width:100%;height:400px;border:1px solid var(--stroke);border-radius:8px;background:#fff;"
-          src=""></iframe>
-      </section>
-
-      <section class="card hidden" id="panelAdmin">
-        <div class="cardTitle">Admin Panel</div>
-        <div class="cardHint">Manage users and set usage limits.</div>
-
-        <div class="actions">
-          <button class="btn" id="refreshAdminBtn">Refresh Users</button>
-        </div>
-
-        <div style="overflow-x:auto;margin-top:15px">
-          <table style="width:100%;border-collapse:collapse;font-size:13px;text-align:left">
-            <thead>
-              <tr style="border-bottom:1px solid var(--stroke);color:var(--muted)">
-                <th style="padding:8px">User</th>
-                <th style="padding:8px">Role</th>
-                <th style="padding:8px">Created</th>
-                <th style="padding:8px">Usage (Day)</th>
-                <th style="padding:8px">Limits (Day)</th>
-                <th style="padding:8px">Action</th>
-              </tr>
-            </thead>
-            <tbody id="adminUserTable"></tbody>
-          </table>
-        </div>
-        <div id="adminStatus" class="status empty"></div>
-
-        <!-- simple edit modal overlay -->
-        <div id="adminEditModal" class="hidden"
-          style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:grid;place-items:center;z-index:999">
-          <div class="card" style="width:300px;background:#0d1117;border:1px solid var(--stroke)">
-            <div class="cardTitle">Edit Limits</div>
-            <div id="editUserTarget" style="margin-bottom:10px;color:var(--accent2);font-size:13px"></div>
-
-            <label style="display:block;margin:5px 0;font-size:12px">Daily Resumes</label>
-            <input type="number" id="editLimitResumes"
-              style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--stroke);color:#fff;padding:5px;border-radius:4px">
-
-            <label style="display:block;margin:10px 0 5px;font-size:12px">Daily Emails</label>
-            <input type="number" id="editLimitEmails"
-              style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--stroke);color:#fff;padding:5px;border-radius:4px">
-
-            <div style="margin-top:15px;display:flex;gap:10px">
-              <button class="btn" id="saveLimitBtn">Save</button>
-              <button class="btn secondary" id="cancelLimitBtn">Cancel</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <aside class="card" id="panelSide">
-        <div class="cardTitle">Status</div>
-        <div id="status" class="status empty">
-          Fill the form and click <strong>Send Email</strong>.
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="cardTitle">Bulk Send (Excel)</div>
-        <div class="cardHint">
-          Send to many recipients either by uploading an <strong>.xlsx</strong> file or by pasting a
-          comma/newline-separated email list.
-        </div>
-
-        <div class="row" style="gap:10px">
-          <a class="dl" href="/sent.xlsx">Download sent log (Excel)</a>
-
-          <label class="label" for="bulkMode">Bulk mode</label>
-          <select id="bulkMode">
-            <option value="excel" selected>Excel sheet (.xlsx)</option>
-            <option value="paste">Direct copy-paste (comma/newline)</option>
-          </select>
-
-          <div id="bulkExcelWrap">
-            <label class="label" for="excel">Excel file (.xlsx) <span class="req">*</span></label>
-            <input id="excel" type="file" accept=".xlsx" />
-          </div>
-
-          <div id="bulkPasteWrap" class="hidden">
-            <label class="label" for="bulkEmails">Emails (comma/newline separated) <span class="req">*</span></label>
-            <textarea id="bulkEmails" rows="6"
-              placeholder="admin@totalsoft.co.uk, abhinav.jain+hiring@cloudambassadors.com, archit.rastogi@arrise.com"></textarea>
-            <div class="micro">Tip: you can paste one per line or separated by commas.</div>
-          </div>
-
-          <label class="label" for="bulkResume">Resume for all rows (optional PDF)</label>
-          <input id="bulkResume" type="file" accept=".pdf" />
-
-          <button id="bulkSendBtn" class="btn" type="button">Send Bulk Emails</button>
-          <div class="micro">
-            Defaults are used for subject/body. In Excel mode, each row can override <strong>subject/body</strong>.
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="cardTitle">Defaults (when fields are empty)</div>
-        <ul class="list">
-          <li><strong>Subject</strong>: from your config (`SUBJECT`)</li>
-          <li><strong>Body</strong>: default application template</li>
-          <li><strong>Resume</strong>: `assets/Shubham_Pawar_3Yr.pdf`</li>
-        </ul>
-      </aside>
-    </main>
-
-    <footer class="footer">
-      Runs locally. Uses SMTP settings from <code>.env</code> (or <code>env.example</code> fallback).
-    </footer>
+      <div class="status-msg" id="statusMsg"></div>
+    </div>
   </div>
 
-  <script src="/app.js"></script>
+  <!-- Edit Limits Modal -->
+  <div class="modal-overlay" id="limitsModal">
+    <div class="modal">
+      <div class="modal-title">Edit User Limits</div>
+      <div class="modal-user" id="modalUser"></div>
+
+      <label for="modalDailyEmails">Daily Emails Limit</label>
+      <input type="number" id="modalDailyEmails" min="0" max="1000" />
+
+      <label for="modalDailyResumes">Daily Resumes Limit</label>
+      <input type="number" id="modalDailyResumes" min="0" max="100" />
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="saveLimitsBtn">Save Limits</button>
+        <button class="btn btn-secondary" id="cancelLimitsBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- State ---
+    let allUsers = [];
+    let editingUser = null;
+
+    // --- DOM ---
+    const tbody = document.getElementById("usersTableBody");
+    const statusMsg = document.getElementById("statusMsg");
+    const limitsModal = document.getElementById("limitsModal");
+
+    // --- Helpers ---
+    function esc(s) {
+      const d = document.createElement("div");
+      d.textContent = String(s || "");
+      return d.innerHTML;
+    }
+
+    function showStatus(type, msg) {
+      statusMsg.className = `status-msg show ${type}`;
+      statusMsg.textContent = msg;
+      setTimeout(() => { statusMsg.classList.remove("show"); }, 4000);
+    }
+
+    function formatDate(iso) {
+      if (!iso || iso === "unknown") return "—";
+      try {
+        const d = new Date(iso);
+        return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+      } catch { return iso; }
+    }
+
+    // --- API ---
+    async function apiFetch(url, opts = {}) {
+      const res = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...opts,
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 403 && (data.error || "").includes("Admin")) {
+        window.location.href = "/admin-login.html";
+        throw new Error("Admin session expired");
+      }
+      return { res, data };
+    }
+
+    // --- Load Users ---
+    async function loadUsers() {
+      try {
+        tbody.innerHTML = `<tr><td colspan="7" class="loading"><div class="spinner"></div><br>Loading…</td></tr>`;
+        const { res, data } = await apiFetch("/api/admin/users");
+        if (!res.ok || !data.ok) throw new Error(data.error || "Failed to load users");
+        allUsers = data.users || [];
+        renderStats();
+        renderTable();
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:20px">${esc(e.message)}</td></tr>`;
+      }
+    }
+
+    function renderStats() {
+      const total = allUsers.length;
+      const banned = allUsers.filter(u => u.banned).length;
+      const active = total - banned;
+      document.getElementById("statTotal").textContent = total;
+      document.getElementById("statActive").textContent = active;
+      document.getElementById("statBanned").textContent = banned;
+    }
+
+    function renderTable() {
+      if (!allUsers.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--muted);padding:20px;text-align:center">No users registered yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = allUsers.map(u => {
+        const statusBadge = u.banned
+          ? `<span class="badge badge-banned">🚫 Banned</span>`
+          : `<span class="badge badge-active">✅ Active</span>`;
+        const roleBadge = u.role === "admin"
+          ? `<span class="badge badge-admin">Admin</span>`
+          : `<span class="badge badge-user">User</span>`;
+        const usage = u.usage || {};
+        const limits = u.limits || {};
+
+        return `<tr>
+          <td><strong>${esc(u.username)}</strong></td>
+          <td>${roleBadge}</td>
+          <td>${statusBadge}</td>
+          <td style="color:var(--muted)">${formatDate(u.created)}</td>
+          <td>
+            <span style="font-size:12px">📧 ${usage.dailyCount || 0}</span>
+          </td>
+          <td>
+            <span style="font-size:12px">📧 ${limits.dailyEmails || 50} / 📄 ${limits.dailyResumes || 10}</span>
+          </td>
+          <td>
+            <div class="action-group">
+              ${u.banned
+            ? `<button class="btn btn-success btn-sm" onclick="unbanUser('${esc(u.username)}')">Unban</button>`
+            : `<button class="btn btn-danger btn-sm" onclick="banUser('${esc(u.username)}')">Ban</button>`
+          }
+              <button class="btn btn-secondary btn-sm" onclick="openLimitsModal('${esc(u.username)}')">⚙️ Limits</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteUser('${esc(u.username)}')">🗑️</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join("");
+    }
+
+    // --- Ban / Unban ---
+    async function banUser(username) {
+      if (!confirm(`Ban user "${username}"? They will be immediately logged out and unable to login.`)) return;
+      try {
+        const { res, data } = await apiFetch("/api/admin/ban", { method: "POST", body: { username } });
+        if (!res.ok || !data.ok) throw new Error(data.error || "Ban failed");
+        showStatus("good", data.message || `${username} banned`);
+        await loadUsers();
+      } catch (e) {
+        showStatus("bad", e.message);
+      }
+    }
+
+    async function unbanUser(username) {
+      try {
+        const { res, data } = await apiFetch("/api/admin/unban", { method: "POST", body: { username } });
+        if (!res.ok || !data.ok) throw new Error(data.error || "Unban failed");
+        showStatus("good", data.message || `${username} unbanned`);
+        await loadUsers();
+      } catch (e) {
+        showStatus("bad", e.message);
+      }
+    }
+
+    // --- Delete ---
+    async function deleteUser(username) {
+      if (!confirm(`🗑️ DELETE user "${username}"?\n\nThis action cannot be undone!`)) return;
+      try {
+        const { res, data } = await apiFetch(`/api/admin/user/${encodeURIComponent(username)}`, { method: "DELETE" });
+        if (!res.ok || !data.ok) throw new Error(data.error || "Delete failed");
+        showStatus("good", data.message || `${username} deleted`);
+        await loadUsers();
+      } catch (e) {
+        showStatus("bad", e.message);
+      }
+    }
+
+    // --- Limits Modal ---
+    function openLimitsModal(username) {
+      editingUser = username;
+      const user = allUsers.find(u => u.username === username);
+      const limits = user?.limits || {};
+      document.getElementById("modalUser").textContent = `User: ${username}`;
+      document.getElementById("modalDailyEmails").value = limits.dailyEmails || 50;
+      document.getElementById("modalDailyResumes").value = limits.dailyResumes || 10;
+      limitsModal.classList.add("active");
+    }
+
+    document.getElementById("cancelLimitsBtn").addEventListener("click", () => {
+      limitsModal.classList.remove("active");
+      editingUser = null;
+    });
+
+    limitsModal.addEventListener("click", (e) => {
+      if (e.target === limitsModal) {
+        limitsModal.classList.remove("active");
+        editingUser = null;
+      }
+    });
+
+    document.getElementById("saveLimitsBtn").addEventListener("click", async () => {
+      if (!editingUser) return;
+      const dailyEmails = Number(document.getElementById("modalDailyEmails").value) || 50;
+      const dailyResumes = Number(document.getElementById("modalDailyResumes").value) || 10;
+      try {
+        const { res, data } = await apiFetch("/api/admin/limits", {
+          method: "POST",
+          body: { username: editingUser, dailyEmails, dailyResumes }
+        });
+        if (!res.ok || !data.ok) throw new Error(data.error || "Save limits failed");
+        limitsModal.classList.remove("active");
+        showStatus("good", data.message || "Limits updated");
+        editingUser = null;
+        await loadUsers();
+      } catch (e) {
+        showStatus("bad", e.message);
+      }
+    });
+
+    // --- Logout ---
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      try { await fetch("/api/admin/logout", { method: "POST" }); } catch { }
+      window.location.href = "/admin-login.html";
+    });
+
+    // --- Refresh ---
+    document.getElementById("refreshBtn").addEventListener("click", loadUsers);
+
+    // --- Init ---
+    loadUsers();
+  </script>
 </body>
 
 </html>

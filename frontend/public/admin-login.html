@@ -4,19 +4,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Job Mailer — Login</title>
+  <title>JobReach — Admin Login</title>
   <style>
     :root {
-      --bg0: #070a13;
-      --bg1: #0b1020;
+      --bg0: #0a0610;
+      --bg1: #120b1d;
       --card: rgba(255, 255, 255, 0.08);
-      --stroke: rgba(255, 255, 255, 0.14);
+      --stroke: rgba(255, 90, 122, 0.25);
       --text: rgba(255, 255, 255, 0.92);
       --muted: rgba(255, 255, 255, 0.65);
-      --accent: #7c5cff;
-      --accent2: #3de1ff;
+      --accent: #ff5a7a;
+      --accent2: #ff9a5c;
       --bad: #ff5a7a;
-      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
       --radius: 18px;
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
@@ -34,8 +34,8 @@
       margin: 0;
       font-family: var(--sans);
       color: var(--text);
-      background: radial-gradient(1200px 900px at 20% 20%, rgba(124, 92, 255, 0.18), transparent 60%),
-        radial-gradient(900px 700px at 70% 30%, rgba(61, 225, 255, 0.14), transparent 60%),
+      background: radial-gradient(1200px 900px at 20% 20%, rgba(255, 90, 122, 0.15), transparent 60%),
+        radial-gradient(900px 700px at 70% 30%, rgba(255, 154, 92, 0.12), transparent 60%),
         linear-gradient(180deg, var(--bg0), var(--bg1));
       display: grid;
       place-items: center;
@@ -46,9 +46,9 @@
       width: min(460px, 100%);
       border-radius: var(--radius);
       border: 1px solid var(--stroke);
-      background: linear-gradient(180deg, var(--card), rgba(255, 255, 255, 0.06));
+      background: linear-gradient(180deg, var(--card), rgba(255, 255, 255, 0.04));
       box-shadow: var(--shadow);
-      padding: 18px;
+      padding: 24px;
       backdrop-filter: blur(12px);
     }
 
@@ -56,17 +56,18 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .logo {
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       border-radius: 14px;
       display: grid;
       place-items: center;
       font-weight: 800;
-      background: linear-gradient(135deg, rgba(124, 92, 255, 0.9), rgba(61, 225, 255, 0.75));
+      font-size: 16px;
+      background: linear-gradient(135deg, rgba(255, 90, 122, 0.9), rgba(255, 154, 92, 0.8));
     }
 
     .title {
@@ -76,42 +77,63 @@
 
     .subtitle {
       font-size: 13px;
-      color: var(--muted);
+      color: var(--accent2);
       margin-top: 2px;
+      font-weight: 600;
+    }
+
+    .admin-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, rgba(255, 90, 122, 0.2), rgba(255, 154, 92, 0.2));
+      border: 1px solid rgba(255, 90, 122, 0.3);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
     }
 
     label {
       display: block;
       font-size: 12px;
       color: rgba(255, 255, 255, 0.78);
-      margin: 10px 0 8px;
+      margin: 12px 0 8px;
     }
 
     input {
       width: 100%;
       border-radius: 14px;
       border: 1px solid var(--stroke);
-      background: rgba(0, 0, 0, 0.22);
+      background: rgba(0, 0, 0, 0.3);
       color: var(--text);
       padding: 12px;
       outline: none;
+      font-size: 14px;
     }
 
     input:focus {
-      border-color: rgba(124, 92, 255, 0.8);
-      box-shadow: 0 0 0 4px rgba(124, 92, 255, 0.16);
+      border-color: rgba(255, 90, 122, 0.7);
+      box-shadow: 0 0 0 4px rgba(255, 90, 122, 0.12);
     }
 
     .btn {
-      margin-top: 14px;
+      margin-top: 16px;
       width: 100%;
-      border: 1px solid rgba(124, 92, 255, 0.5);
-      background: linear-gradient(135deg, rgba(124, 92, 255, 0.95), rgba(61, 225, 255, 0.72));
-      color: #061018;
+      border: 1px solid rgba(255, 90, 122, 0.5);
+      background: linear-gradient(135deg, rgba(255, 90, 122, 0.9), rgba(255, 154, 92, 0.8));
+      color: #0a0610;
       font-weight: 820;
       border-radius: 14px;
       padding: 12px 14px;
       cursor: pointer;
+      font-size: 14px;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
     }
 
     .status {
@@ -125,18 +147,17 @@
       color: var(--bad);
     }
 
-    .hint {
-      margin-top: 10px;
+    .back-link {
+      display: block;
+      margin-top: 16px;
+      text-align: center;
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.55);
-      line-height: 1.5;
+      color: var(--muted);
+      text-decoration: none;
     }
 
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
-        monospace;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.78);
+    .back-link:hover {
+      color: var(--text);
     }
   </style>
 </head>
@@ -144,33 +165,28 @@
 <body>
   <div class="card">
     <div class="brand">
-      <div class="logo">JM</div>
+      <div class="logo">🛡️</div>
       <div>
-        <div class="title">Job Mailer</div>
-        <div class="subtitle">Login to continue</div>
+        <div class="title">JobReach Admin</div>
+        <div class="subtitle">Admin Control Panel</div>
       </div>
     </div>
 
+    <div class="admin-badge">🔒 ADMIN ACCESS ONLY</div>
+
     <form id="f">
-      <label for="user">Username</label>
-      <input id="user" name="user" type="text" placeholder="Enter username" required />
+      <label for="user">Admin Username</label>
+      <input id="user" name="user" type="text" placeholder="Enter admin username" required />
 
-      <label for="pass">Password</label>
-      <input id="pass" name="pass" type="password" placeholder="Enter password" required />
+      <label for="pass">Admin Password</label>
+      <input id="pass" name="pass" type="password" placeholder="Enter admin password" required />
 
-      <button class="btn" type="submit">Login</button>
+      <button class="btn" type="submit">Login as Admin</button>
     </form>
 
     <div id="status" class="status"></div>
-    <div class="hint">
-      Set <code>UI_AUTH_USER</code> and <code>UI_AUTH_PASS</code> in your <code>.env</code> (or
-      <code>env.example</code>).
-    </div>
 
-    <div style="margin-top: 15px; text-align: center;">
-      <a href="/register.html" style="color: var(--accent2); text-decoration: none; font-size: 13px;">Create an
-        account</a>
-    </div>
+    <a href="/login.html" class="back-link">← Back to User Login</a>
   </div>
 
   <script>
@@ -179,11 +195,11 @@
     f.addEventListener("submit", async (e) => {
       e.preventDefault();
       statusEl.className = "status";
-      statusEl.textContent = "Logging in…";
+      statusEl.textContent = "Authenticating…";
       const user = document.getElementById("user").value.trim();
       const pass = document.getElementById("pass").value;
       try {
-        const res = await fetch("/api/login", {
+        const res = await fetch("/api/admin/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user, pass }),
@@ -191,10 +207,10 @@
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
           statusEl.className = "status bad";
-          statusEl.textContent = data.error || "Login failed";
+          statusEl.textContent = data.error || "Admin login failed";
           return;
         }
-        window.location.href = "/";
+        window.location.href = "/admin.html";
       } catch (err) {
         statusEl.className = "status bad";
         statusEl.textContent = String(err && err.message ? err.message : err);

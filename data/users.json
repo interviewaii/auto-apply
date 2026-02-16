@@ -2,5 +2,35 @@
   "gavali": {
     "password": "$2b$10$P.oEseT7GiBVoOI6tkTbmuu63ZMDMBzUDwvTN1NDFht60GyYTD9NG",
     "created": "2026-02-14T19:17:09.634Z"
+  },
+  "testuser99": {
+    "password": "$2b$10$klOGnAa5P/HjFstm1nGvf.aU3jLBuXuo4Vwd.yrfZQkrkaPVFNcCy",
+    "created": "2026-02-15T20:02:27.971Z",
+    "role": "user",
+    "banned": false,
+    "limits": {
+      "dailyEmails": 50,
+      "dailyResumes": 10
+    },
+    "usage": {
+      "dailyCount": 0,
+      "monthlyCount": 0,
+      "lastReset": "2026-02-15T20:02:27.983Z"
+    }
+  },
+  "gavali38": {
+    "password": "$2b$10$6mIAHpa/5Beo6lF8jT1iXOQwdYOHdw1aaSDFSzdPutaRMhHiCZEWq",
+    "created": "2026-02-15T20:06:49.564Z",
+    "role": "user",
+    "banned": false,
+    "limits": {
+      "dailyEmails": 50,
+      "dailyResumes": 10
+    },
+    "usage": {
+      "dailyCount": 0,
+      "monthlyCount": 0,
+      "lastReset": "2026-02-15T20:06:49.564Z"
+    }
   }
 }

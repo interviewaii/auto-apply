@@ -1,0 +1,17 @@
+{
+  "smtpHost": "smtp.gmail.com",
+  "smtpPort": 465,
+  "smtpSecure": true,
+  "smtpUser": "ashutosh38agg@gmail.com",
+  "smtpPass": "",
+  "fromEmail": "ashutosh38agg@gmail.com",
+  "fromName": "your name",
+  "subject": "Application for MERN Stack Developer Role — Immediate Joiner | 3 Yrs Experience",
+  "defaultBody": "",
+  "dateOfBirth": "",
+  "totalExperience": "",
+  "noticePeriod": "",
+  "expectedCtc": "",
+  "currentLocation": "",
+  "preferredLocation": ""
+}
