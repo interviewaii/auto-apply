@@ -2508,6 +2508,16 @@ const server = app.listen(PORT, HOST, () => {
   const shownHost = HOST === "0.0.0.0" ? "localhost" : HOST;
   console.log(`UI running at http://${shownHost}:${PORT}`);
   console.log(`Env loaded from: ${config.meta?.loadedEnvFile || "(unknown)"}`);
+
+  // Keep-Alive Mechanism (for free tier platforms)
+  const SELF_PING_URL = process.env.SELF_PING_URL;
+  if (SELF_PING_URL) {
+    console.log(`[KeepAlive] Configured to ping ${SELF_PING_URL} every 14 minutes`);
+    setInterval(() => {
+      console.log(`[KeepAlive] Pinging ${SELF_PING_URL}...`);
+      fetch(SELF_PING_URL).catch(e => console.error(`[KeepAlive] Ping failed: ${e.message}`));
+    }, 14 * 60 * 1000); // 14 mins (just under 15 min limit)
+  }
 });
 
 server.on("error", (err) => {
