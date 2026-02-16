@@ -1,0 +1,31 @@
+Attempting to connect with URI (masked): mongodb+srv:****@cluster0.629elxj.mongodb.net/?appName=Cluster0
+ERROR: Connection failed.
+Message: bad auth : Authentication failed.
+Code: 8000
+CodeName: AtlasError
+Attempting to connect with URI (masked): mongodb+srv:****@cluster0.629elxj.mongodb.net/?appName=Cluster0&authSource=admin
+ERROR: Connection failed.
+Message: bad auth : Authentication failed.
+Code: 8000
+CodeName: AtlasError
+Attempting to connect with URI (masked): mongodb+srv:****@cluster0.629elxj.mongodb.net/?appName=Cluster0&authSource=admin
+ERROR: Connection failed.
+Message: bad auth : Authentication failed.
+Code: 8000
+CodeName: AtlasError
+Attempting to connect with URI (masked): mongodb+srv:****@cluster0.629elxj.mongodb.net/?appName=Cluster0&authSource=admin
+ERROR: Connection failed.
+Message: bad auth : Authentication failed.
+Code: 8000
+CodeName: AtlasError
+Attempting to connect with URI (masked): mongodb+srv:****@cluster0.629elxj.mongodb.net/jobreach?appName=Cluster0&authSource=admin
+ERROR: Connection failed.
+Message: bad auth : Authentication failed.
+Code: 8000
+CodeName: AtlasError
+Attempting to connect with URI (masked): mongodb+srv:****@cluster0.629elxj.mongodb.net/jobreach?appName=Cluster0&authSource=admin
+SUCCESS: Connected to MongoDB!
+Attempting to write a test document...
+SUCCESS: Test document saved!
+Attempting to delete test document...
+SUCCESS: Test document deleted!

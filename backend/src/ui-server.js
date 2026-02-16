@@ -30,11 +30,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "job-mailer-secret-key-change-me",
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force save even if unmodified
+    saveUninitialized: true, // Force new sessions to save
+    rolling: true, // Refresh cookie on every request
     cookie: {
-      secure: false, // set to true if using https
+      secure: false,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      path: '/' // Ensure cookie is valid for all paths
     },
   })
 );
@@ -143,7 +145,15 @@ app.post("/api/login", async (req, res) => {
 
   req.session.username = user;
   req.session.role = await userManager.getUserRole(user);
-  return res.json({ ok: true, username: user });
+
+  // Force save session before response
+  req.session.save((err) => {
+    if (err) {
+      console.error("Session save error:", err);
+      return res.status(500).json({ ok: false, error: "Session save failed" });
+    }
+    return res.json({ ok: true, username: user });
+  });
 });
 
 app.post("/api/logout", (req, res) => {
@@ -234,7 +244,7 @@ const asyncAuth = (fn) => (req, res, next) => {
 };
 
 // Protect everything
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   if (req.path === "/health") return next();
   if (req.path === "/login.html" || req.path === "/login") return next();
   if (req.path === "/register.html") return next();
@@ -245,59 +255,14 @@ app.use((req, res, next) => {
   if (req.path === "/api/admin/login") return next();
   if (req.path.startsWith("/api/admin/")) return next();
 
-  // Async wrapper logic inline for requireAuth
-  return requireAuth(req, res, next).catch(next);
+  // Specific protection for admin dashboard
+  if (req.path === "/admin.html") return requireAdmin(req, res, next);
+
+  await requireAuth(req, res, next);
 });
 
 // ... (Static files, HR Lookup, etc. unchanged) ...
 app.use(express.static(path.resolve(__dirname, "../../frontend/public"))); // Assuming correct path, original code used UI_DIR variable which was missing in view? 
-// Let's assume UI_DIR is defined above or just use standard static middleware.
-// Actually, original code had `app.use(express.static(UI_DIR));` at line 1002.
-// I will keep the middle part of the file as is by not replacing it, 
-// BUT wait, I am replacing the WHOLE file to ensure all async calls are caught?
-// No, that's too risky/large. I should replace chunks.
-// The prompt "ReplacementContent" above is huge.
-// Let's try to be surgical with MultiReplace or chunked Replace.
-// The major changes are:
-// 1. Imports (db, async calls)
-// 2. Auth middleware (async)
-// 3. Auth routes (async)
-// 4. Job routes (async)
-
-// I will ABORT this huge replace and do smaller chunks.
-
-
-const upload = multer({
-  dest: path.join(os.tmpdir(), "job-mailer-uploads"),
-  limits: {
-    fileSize: 12 * 1024 * 1024, // 12MB
-  },
-});
-
-function normalizeEmail(email) {
-  return String(email || "").trim().toLowerCase();
-}
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function parseEmailsFromText(raw) {
-  const s = String(raw || "");
-  const parts = s
-    .split(/[\n,;]+/g)
-    .map((x) => normalizeEmail(x))
-    .filter(Boolean);
-  const out = [];
-  const seen = new Set();
-  for (const e of parts) {
-    if (!isValidEmail(e)) continue;
-    if (seen.has(e)) continue;
-    seen.add(e);
-    out.push(e);
-  }
-  return out;
-}
 
 // -------------------------
 // ATS scoring (local heuristic)
@@ -1060,178 +1025,13 @@ const UI_DIR = path.resolve(__dirname, "..", "..", "frontend", "public");
 const LOGIN_PATH = path.resolve(UI_DIR, "login.html");
 
 // -------------------------
-// Auth (simple local login)
-// -------------------------
-// -------------------------
 // Auth (Session based)
 // -------------------------
-function isAuthenticated(req) {
-  return !!req.session && !!req.session.username;
-}
+// Used robust versions at the top of the file.
 
-function requireAuth(req, res, next) {
-  if (!isAuthenticated(req)) {
-    const isApi = req.path.startsWith("/api/");
-    if (isApi) return res.status(401).json({ ok: false, error: "Unauthorized. Please login." });
-    return res.redirect("/login.html");
-  }
-  // Check if user is banned
-  if (userManager.isBanned(req.session.username)) {
-    req.session.destroy();
-    const isApi = req.path.startsWith("/api/");
-    if (isApi) return res.status(403).json({ ok: false, error: "Your account has been banned. Contact admin." });
-    return res.redirect("/login.html");
-  }
-  return next();
-}
 
-function requireAdmin(req, res, next) {
-  if (!req.session || !req.session.isAdmin) {
-    const isApi = req.path.startsWith("/api/");
-    if (isApi) return res.status(403).json({ ok: false, error: "Admin access required" });
-    return res.redirect("/admin-login.html");
-  }
-  return next();
-}
+// --- HR / Lookup and Sending logic follows ---
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
-
-app.get("/login", (_req, res) => {
-  return res.redirect("/login.html");
-});
-
-// --- User Auth Routes ---
-
-app.post("/api/register", async (req, res) => {
-  try {
-    const { user, pass } = req.body;
-    if (!user || !pass) return res.status(400).json({ ok: false, error: "Username and password required" });
-    await userManager.createUser(user, pass);
-    req.session.username = user;
-    req.session.role = "user";
-    return res.json({ ok: true, username: user });
-  } catch (e) {
-    return res.status(400).json({ ok: false, error: e.message });
-  }
-});
-
-app.post("/api/login", (req, res) => {
-  const { user, pass } = req.body;
-  if (!user || !pass) return res.status(400).json({ ok: false, error: "Username and password required" });
-
-  const valid = userManager.validatePassword(user, pass);
-  if (!valid) {
-    return res.status(401).json({ ok: false, error: "Invalid username or password" });
-  }
-
-  // Check if banned
-  if (userManager.isBanned(user)) {
-    return res.status(403).json({ ok: false, error: "Your account has been banned. Contact admin." });
-  }
-
-  req.session.username = user;
-  req.session.role = userManager.getUserRole(user);
-  return res.json({ ok: true, username: user });
-});
-
-app.post("/api/logout", (req, res) => {
-  req.session.destroy();
-  return res.json({ ok: true });
-});
-
-app.get("/api/me", (req, res) => {
-  if (!isAuthenticated(req)) return res.status(401).json({ ok: false, error: "Not logged in" });
-  const username = req.session.username;
-  return res.json({
-    ok: true,
-    username,
-    role: userManager.getUserRole(username) || "user",
-    banned: userManager.isBanned(username),
-    limits: userManager.getUserLimits(username),
-    usage: userManager.getUserUsage(username)
-  });
-});
-
-// --- Admin Auth Routes ---
-
-app.post("/api/admin/login", (req, res) => {
-  const { user, pass } = req.body;
-  const adminUser = process.env.ADMIN_USER || "admin";
-  const adminPass = process.env.ADMIN_PASS || "admin123";
-
-  if (!user || !pass) {
-    return res.status(400).json({ ok: false, error: "Username and password required" });
-  }
-  if (user !== adminUser || pass !== adminPass) {
-    return res.status(401).json({ ok: false, error: "Invalid admin credentials" });
-  }
-
-  req.session.isAdmin = true;
-  req.session.adminUser = user;
-  return res.json({ ok: true });
-});
-
-app.post("/api/admin/logout", (req, res) => {
-  if (req.session) {
-    req.session.isAdmin = false;
-    req.session.adminUser = null;
-  }
-  return res.json({ ok: true });
-});
-
-app.get("/api/admin/users", requireAdmin, (req, res) => {
-  const users = userManager.getAllUsers();
-  return res.json({ ok: true, users });
-});
-
-app.post("/api/admin/ban", requireAdmin, (req, res) => {
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ ok: false, error: "Username required" });
-  if (!userManager.getUser(username)) return res.status(404).json({ ok: false, error: "User not found" });
-  userManager.banUser(username);
-  return res.json({ ok: true, message: `User '${username}' has been banned` });
-});
-
-app.post("/api/admin/unban", requireAdmin, (req, res) => {
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ ok: false, error: "Username required" });
-  if (!userManager.getUser(username)) return res.status(404).json({ ok: false, error: "User not found" });
-  userManager.unbanUser(username);
-  return res.json({ ok: true, message: `User '${username}' has been unbanned` });
-});
-
-app.post("/api/admin/limits", requireAdmin, (req, res) => {
-  const { username, dailyEmails, dailyResumes } = req.body;
-  if (!username) return res.status(400).json({ ok: false, error: "Username required" });
-  if (!userManager.getUser(username)) return res.status(404).json({ ok: false, error: "User not found" });
-  userManager.setUserLimits(username, { dailyEmails, dailyResumes });
-  return res.json({ ok: true, message: `Limits updated for '${username}'` });
-});
-
-app.delete("/api/admin/user/:username", requireAdmin, (req, res) => {
-  const { username } = req.params;
-  if (!userManager.getUser(username)) return res.status(404).json({ ok: false, error: "User not found" });
-  userManager.deleteUser(username);
-  return res.json({ ok: true, message: `User '${username}' deleted` });
-});
-
-// Protect everything (UI + API) except health + login + admin-login endpoints.
-app.use((req, res, next) => {
-  if (req.path === "/health") return next();
-  if (req.path === "/login.html" || req.path === "/login") return next();
-  if (req.path === "/register.html") return next();
-  if (req.path === "/admin-login.html") return next();
-  if (req.path === "/styles.css") return next();
-  if (req.path === "/app.js") return next();
-  if (req.path === "/api/login" || req.path === "/api/register") return next();
-  if (req.path === "/api/admin/login") return next();
-  // Admin routes are protected by requireAdmin middleware individually
-  if (req.path.startsWith("/api/admin/")) return next();
-  return requireAuth(req, res, next);
-});
-
-// Serve UI (protected if auth enabled)
-app.use(express.static(UI_DIR));
 
 async function hrLookupInternal({ company, domain, provider }) {
   const domainInput = normalizeDomain(domain || "");
