@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const jobSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     platform: { type: String, required: true },
     jobId: { type: String, required: true },
     title: String,
@@ -18,7 +19,7 @@ const jobSchema = new mongoose.Schema({
     externalUrl: String
 });
 
-// Compound index for unique jobs per platform
-jobSchema.index({ platform: 1, jobId: 1 }, { unique: true });
+// Compound index for unique jobs per user
+jobSchema.index({ userId: 1, platform: 1, jobId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Job', jobSchema);

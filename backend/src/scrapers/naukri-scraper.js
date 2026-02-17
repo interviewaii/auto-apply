@@ -26,7 +26,11 @@ class NaukriScraper {
         if (this.browser) return;
 
         const path = require("path");
-        const userDataDir = path.join(process.cwd(), "browser_data");
+        // Multi-user isolation: Use userId in userDataDir
+        const userId = this.options.userId || "default";
+        const userDataDir = path.join(process.cwd(), "browser_data", String(userId));
+
+        console.log(`[Naukri] Initializing browser for user: ${userId}`);
 
         this.browser = await puppeteer.launch({
             headless: this.headless ? "new" : false,

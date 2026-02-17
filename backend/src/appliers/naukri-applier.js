@@ -11,8 +11,11 @@ class NaukriApplier {
         this.page = null;
         this.headless = options.headless !== undefined ? options.headless : false;
         this.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-        this.credentials = options.credentials || {};
-        this.userData = options.userData || {};
+
+        // Multi-user context
+        this.userId = options.userId || "default";
+        this.credentials = options.credentials || {}; // { username, password }
+
         this.isLoggedIn = false;
     }
 
@@ -24,13 +27,15 @@ class NaukriApplier {
     }
 
     /**
-     * Initialize browser
+     * Initialize browser with user isolation
      */
     async init() {
         if (this.browser) return;
 
         const path = require("path");
-        const userDataDir = path.join(process.cwd(), "browser_data");
+        // Isolated browser data per user
+        const userDataDir = path.join(process.cwd(), "browser_data", String(this.userId));
+        console.log(`[NaukriApplier] Initializing browser for user: ${this.userId}`);
 
         this.browser = await puppeteer.launch({
             headless: this.headless ? "new" : false,
@@ -70,7 +75,7 @@ class NaukriApplier {
     }
 
     /**
-     * Login to Naukri account
+     * Login to Naukri account using stored credentials if available
      */
     async login() {
         if (this.isLoggedIn) return true;
@@ -90,20 +95,47 @@ class NaukriApplier {
             });
 
             if (isLoggedIn) {
-                console.log("[Naukri] Session found! Already logged in.");
+                console.log(`[Naukri] Session found for user ${this.userId}! Already logged in.`);
                 this.isLoggedIn = true;
                 return true;
             }
 
-            console.log("[Naukri] Session not found. Switching to MANUAL LOGIN mode...");
-            await this.page.goto("https://www.naukri.com/nlogin/login", {
-                waitUntil: "domcontentloaded",
-                timeout: 60000
-            });
+            console.log(`[Naukri] Session not found for user ${this.userId}. Attempting login...`);
+
+            // Auto-login if credentials provided
+            if (this.credentials.username && this.credentials.password) {
+                await this.page.goto("https://www.naukri.com/nlogin/login", { waitUntil: "domcontentloaded", timeout: 30000 });
+
+                console.log(`[Naukri] Auto-filling credentials for ${this.credentials.username}`);
+
+                await this.page.waitForSelector('#usernameField', { timeout: 5000 });
+                await this.page.type('#usernameField', this.credentials.username, { delay: 50 });
+
+                await this.page.waitForSelector('#passwordField', { timeout: 5000 });
+                await this.page.type('#passwordField', this.credentials.password, { delay: 50 });
+
+                await this.page.click('button[type="submit"]');
+                await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }).catch(() => { });
+
+                // Re-check login
+                const loginSuccess = await this.page.evaluate(() => {
+                    const bodyText = document.body.innerText.toLowerCase();
+                    return bodyText.includes('my naukri') || bodyText.includes('view profile') || document.querySelector(".nI-gNb-drawer__icon") !== null;
+                });
+
+                if (loginSuccess) {
+                    console.log("[Naukri] Auto-login successful!");
+                    this.isLoggedIn = true;
+                    return true;
+                } else {
+                    console.error("[Naukri] Auto-login failed. Falling back to manual.");
+                }
+            }
 
             console.log("=================================================");
-            console.log(" PLEASE LOG IN MANUALLY IN THE BROWSER WINDOW NOW ");
+            console.log(` PLEASE LOG IN MANUALLY FOR USER ${this.userId} `);
             console.log("=================================================");
+
 
             // Wait up to 5 minutes
             const startTime = Date.now();

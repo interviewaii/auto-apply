@@ -182,11 +182,31 @@ async function deleteUser(username) {
     return true;
 }
 
+async function updateUserProfile(username, profileData) {
+    await User.updateOne({ username }, { $set: { profile: profileData } });
+    return true;
+}
+
+async function updateSmtpSettings(username, smtpData) {
+    await User.updateOne({ username }, { $set: { smtpSettings: smtpData } });
+    return true;
+}
+
+async function updateNaukriCredentials(username, credentials) {
+    await User.updateOne({ username }, { $set: { naukriCredentials: credentials } });
+    return true;
+}
+
+async function getUserFull(username) {
+    return User.findOne({ username });
+}
+
 module.exports = {
     createUser,
     validatePassword,
     verifyPassword,
     getUser,
+    getUserFull,
     getUserRole,
     getUserSettingsPath,
     getUserResumePath,
@@ -198,5 +218,8 @@ module.exports = {
     getUserUsage,
     incrementUserUsage,
     getAllUsers,
-    deleteUser
+    deleteUser,
+    updateUserProfile,
+    updateSmtpSettings,
+    updateNaukriCredentials
 };

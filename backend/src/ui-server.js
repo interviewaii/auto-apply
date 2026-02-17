@@ -723,120 +723,170 @@ app.post("/api/generate-email", upload.single("resume"), async (req, res) => {
 });
 
 // -------------------------
-// UI Defaults (stored per user)
+// UI Defaults (stored in DB per user)
 // -------------------------
 
-function loadUiSettings(username) {
-  if (!username) return {};
-  return readJson(userManager.getUserSettingsPath(username), {});
-}
+async function getEffectiveSettings(username) {
+  const user = await userManager.getUserFull(username);
+  if (!user) return {}; // Should not happen if logged in
 
-function saveUiSettings(username, next) {
-  if (!username) return;
-  writeJsonAtomic(userManager.getUserSettingsPath(username), next || {});
-}
+  const p = user.profile || {};
+  const s = user.smtpSettings || {};
 
-function getEffectiveSettings(username) {
-  const s = loadUiSettings(username);
-  const resumePath = userManager.getUserResumePath(username);
+  // Backwards compatibility / defaults
   return {
     smtp: {
-      host: String(s.smtpHost || config.smtp.host || "").trim(),
-      port: Number(s.smtpPort || config.smtp.port || 0) || config.smtp.port,
-      secure: s.smtpSecure === undefined ? config.smtp.secure : Boolean(s.smtpSecure),
-      user: String(s.smtpUser || config.smtp.user || "").trim(),
-      pass: String(s.smtpPass || config.smtp.pass || "").trim(),
+      host: String(s.host || config.smtp.host || "").trim(),
+      port: Number(s.port || config.smtp.port || 0) || config.smtp.port,
+      secure: s.secure !== undefined ? s.secure : (config.smtp.secure || false),
+      user: String(s.user || config.smtp.user || "").trim(),
+      pass: String(s.pass || config.smtp.pass || "").trim(),
     },
     from: {
-      email: String(s.fromEmail || config.from.email || s.smtpUser || "").trim(),
+      email: String(s.fromEmail || config.from.email || s.user || "").trim(),
       name: String(s.fromName || config.from.name || "").trim(),
     },
-    subject: String(s.subject || config.content.subject || "").trim(),
-    defaultBody: String(s.defaultBody || "").trim(),
-    dateOfBirth: String(s.dateOfBirth || "").trim(),
-    totalExperience: String(s.totalExperience || "").trim(),
-    noticePeriod: String(s.noticePeriod || "").trim(),
-    expectedCtc: String(s.expectedCtc || "").trim(),
-    currentLocation: String(s.currentLocation || "").trim(),
-    preferredLocation: String(s.preferredLocation || "").trim(),
-    resumePath: fs.existsSync(resumePath) ? resumePath : config.paths.resumePath,
+    subject: String(p.subject || config.content.subject || "").trim(),
+    defaultBody: String(p.defaultBody || "").trim(),
+
+    // Profile fields
+    dateOfBirth: String(p.dateOfBirth || "").trim(),
+    totalExperience: String(p.totalExperience || "").trim(),
+    noticePeriod: String(p.noticePeriod || "").trim(),
+    expectedCtc: String(p.expectedCtc || "").trim(),
+    currentLocation: String(p.currentLocation || "").trim(),
+    preferredLocation: String(p.preferredLocation || "").trim(),
+    resumePath: fs.existsSync(p.resumePath) ? p.resumePath : config.paths.resumePath,
+
+    // Meta
     meta: {
-      smtpPassSet: Boolean(String(s.smtpPass || "").trim()),
-      resumeSet: fs.existsSync(resumePath),
+      smtpPassSet: Boolean(String(s.pass || "").trim()),
+      resumeSet: fs.existsSync(p.resumePath)
     },
   };
 }
 
-app.get("/api/settings", (req, res) => {
+app.get("/api/settings", async (req, res) => {
   const username = req.session.username;
-  const raw = loadUiSettings(username);
-  const eff = getEffectiveSettings(username);
+  const user = await userManager.getUserFull(username);
+  if (!user) return res.status(404).json({ ok: false, error: "User not found" });
+
+  const p = user.profile || {};
+  const s = user.smtpSettings || {};
+  const n = user.naukriCredentials || {};
+
   return res.json({
     ok: true,
     settings: {
-      smtpHost: String(raw.smtpHost || config.smtp.host || ""),
-      smtpPort: raw.smtpPort ?? config.smtp.port,
-      smtpSecure: raw.smtpSecure ?? config.smtp.secure,
-      smtpUser: String(raw.smtpUser || config.smtp.user || ""),
+      // SMTP
+      smtpHost: String(s.host || config.smtp.host || ""),
+      smtpPort: s.port ?? config.smtp.port,
+      smtpSecure: s.secure ?? config.smtp.secure,
+      smtpUser: String(s.user || config.smtp.user || ""),
       // do not return the password
-      smtpPassSet: eff.meta.smtpPassSet,
-      fromEmail: String(raw.fromEmail || config.from.email || ""),
-      fromName: String(raw.fromName || config.from.name || ""),
-      subject: String(raw.subject || config.content.subject || ""),
-      defaultBody: String(raw.defaultBody || ""),
-      dateOfBirth: String(raw.dateOfBirth || ""),
-      totalExperience: String(raw.totalExperience || ""),
-      noticePeriod: String(raw.noticePeriod || ""),
-      expectedCtc: String(raw.expectedCtc || ""),
-      currentLocation: String(raw.currentLocation || ""),
-      preferredLocation: String(raw.preferredLocation || ""),
-      resumeSet: eff.meta.resumeSet,
+      smtpPassSet: Boolean(s.pass),
+      fromEmail: String(s.fromEmail || config.from.email || ""),
+      fromName: String(s.fromName || config.from.name || ""),
+
+      // Profile / Content
+      subject: String(p.subject || config.content.subject || ""),
+      defaultBody: String(p.defaultBody || ""),
+      dateOfBirth: String(p.dateOfBirth || ""),
+      totalExperience: String(p.totalExperience || ""),
+      noticePeriod: String(p.noticePeriod || ""),
+      expectedCtc: String(p.expectedCtc || ""),
+      currentLocation: String(p.currentLocation || ""),
+      preferredLocation: String(p.preferredLocation || ""),
+
+      // Naukri (only return username, not password)
+      naukriUsername: String(n.username || ""),
+      naukriPassSet: Boolean(n.password),
+
+      resumeSet: fs.existsSync(p.resumePath),
     },
   });
+
+
 });
 
-app.post("/api/settings", (req, res) => {
+app.post("/api/settings", async (req, res) => {
   try {
     const username = req.session.username;
-    const prev = loadUiSettings(username);
-    const smtpPassIncoming = String(req.body.smtpPass || "");
-    const next = {
-      smtpHost: String(req.body.smtpHost || prev.smtpHost || "").trim(),
-      smtpPort:
-        req.body.smtpPort === null || req.body.smtpPort === undefined || req.body.smtpPort === ""
-          ? prev.smtpPort
-          : Number(req.body.smtpPort),
-      smtpSecure:
-        req.body.smtpSecure === undefined || req.body.smtpSecure === null
-          ? prev.smtpSecure
-          : Boolean(req.body.smtpSecure),
-      smtpUser: String(req.body.smtpUser || prev.smtpUser || "").trim(),
-      smtpPass: smtpPassIncoming.trim() ? smtpPassIncoming.trim() : String(prev.smtpPass || ""),
-      fromEmail: String(req.body.fromEmail || prev.fromEmail || "").trim(),
-      fromName: String(req.body.fromName || prev.fromName || "").trim(),
-      subject: String(req.body.subject || prev.subject || "").trim(),
-      defaultBody: String(req.body.defaultBody || prev.defaultBody || "").trim(),
-      dateOfBirth: String(req.body.dateOfBirth || prev.dateOfBirth || "").trim(),
-      totalExperience: String(req.body.totalExperience || prev.totalExperience || "").trim(),
-      noticePeriod: String(req.body.noticePeriod || prev.noticePeriod || "").trim(),
-      expectedCtc: String(req.body.expectedCtc || prev.expectedCtc || "").trim(),
-      currentLocation: String(req.body.currentLocation || prev.currentLocation || "").trim(),
-      preferredLocation: String(req.body.preferredLocation || prev.preferredLocation || "").trim(),
+    console.log("Saving settings for:", username, req.body);
+
+    const {
+      smtpHost, smtpPort, smtpSecure, smtpUser, smtpPass,
+      fromEmail, fromName,
+      subject, defaultBody,
+      dateOfBirth, totalExperience, noticePeriod, expectedCtc, currentLocation, preferredLocation,
+      naukriUsername, naukriPassword
+    } = req.body;
+
+    const user = await userManager.getUserFull(username);
+    if (!user) return res.status(404).json({ ok: false, error: "User not found" });
+
+    // 1. Update SMTP
+    const currentSmtp = user.smtpSettings || {};
+    const newSmtp = {
+      host: smtpHost !== undefined ? smtpHost : currentSmtp.host,
+      port: smtpPort !== undefined ? Number(smtpPort) : currentSmtp.port,
+      secure: smtpSecure !== undefined ? Boolean(smtpSecure) : currentSmtp.secure,
+      user: smtpUser !== undefined ? smtpUser : currentSmtp.user,
+      pass: smtpPass ? smtpPass : currentSmtp.pass, // Only update pass if provided
+      fromEmail: fromEmail !== undefined ? fromEmail : currentSmtp.fromEmail,
+      fromName: fromName !== undefined ? fromName : currentSmtp.fromName
     };
-    saveUiSettings(username, next);
+    await userManager.updateSmtpSettings(username, newSmtp);
+
+    // 2. Update Profile
+    const currentProfile = user.profile || {};
+    const newProfile = {
+      ...currentProfile,
+      subject: subject !== undefined ? subject : currentProfile.subject,
+      defaultBody: defaultBody !== undefined ? defaultBody : currentProfile.defaultBody,
+      dateOfBirth: dateOfBirth !== undefined ? dateOfBirth : currentProfile.dateOfBirth,
+      totalExperience: totalExperience !== undefined ? totalExperience : currentProfile.totalExperience,
+      noticePeriod: noticePeriod !== undefined ? noticePeriod : currentProfile.noticePeriod,
+      expectedCtc: expectedCtc !== undefined ? expectedCtc : currentProfile.expectedCtc,
+      currentLocation: currentLocation !== undefined ? currentLocation : currentProfile.currentLocation,
+      preferredLocation: preferredLocation !== undefined ? preferredLocation : currentProfile.preferredLocation,
+    };
+    await userManager.updateUserProfile(username, newProfile);
+
+    // 3. Update Naukri Credentials
+    if (naukriUsername !== undefined || naukriPassword !== undefined) {
+      const currentNaukri = user.naukriCredentials || {};
+      const newNaukri = {
+        username: naukriUsername !== undefined ? naukriUsername : currentNaukri.username,
+        password: naukriPassword ? naukriPassword : currentNaukri.password
+      };
+      await userManager.updateNaukriCredentials(username, newNaukri);
+    }
+
     return res.json({ ok: true });
   } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e?.message || e) });
+    console.error("Save settings error:", e);
+    return res.status(500).json({ ok: false, error: e.message });
   }
 });
+
 
 app.post("/api/settings/resume", upload.single("resume"), async (req, res) => {
   try {
     if (!req.file?.path) return res.status(400).json({ ok: false, error: "Resume file is required." });
     const username = req.session.username;
+
+    // We still save to disk for now as other parts might expect it there, 
+    // but we ALSO update the DB profile.
     const targetPath = userManager.getUserResumePath(username);
     ensureDir(path.dirname(targetPath));
     await fs.promises.copyFile(req.file.path, targetPath);
+
+    // Update DB
+    const user = await userManager.getUserFull(username);
+    const profile = user.profile || {};
+    await userManager.updateUserProfile(username, { ...profile, resumePath: targetPath });
+
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
@@ -2131,9 +2181,23 @@ function saveJobConfig(config) {
 }
 
 // Get job automation config
-app.get("/api/jobs/config", (_req, res) => {
+// Get job automation config
+app.get("/api/jobs/config", async (req, res) => {
   try {
+    const username = req.session.username;
+    // Load global defaults/template
     const config = loadJobConfig();
+
+    // Fetch user-specific overrides
+    const user = await userManager.getUserFull(username);
+
+    // Merge User Credentials into Config (for display)
+    if (user.naukriCredentials && user.naukriCredentials.username) {
+      config.platforms.naukri.credentials.email = user.naukriCredentials.username;
+      // Logic to indicate password exists without sending it
+      config.platforms.naukri.credentials.passwordSet = !!user.naukriCredentials.password;
+    }
+
     // Don't send passwords to frontend
     const sanitized = JSON.parse(JSON.stringify(config));
     for (const platform in sanitized.platforms) {
@@ -2149,12 +2213,39 @@ app.get("/api/jobs/config", (_req, res) => {
 });
 
 // Save job automation config
-app.post("/api/jobs/config", (req, res) => {
+// Save job automation config
+app.post("/api/jobs/config", async (req, res) => {
   try {
+    const username = req.session.username;
     const prev = loadJobConfig();
     const next = req.body.config || {};
 
-    // Preserve passwords if not provided
+    // 1. Extract and Save Credentials to User Profile (MongoDB)
+    const naukriCreds = next.platforms?.naukri?.credentials || {};
+
+    if (naukriCreds.email) {
+      const user = await userManager.getUserFull(username);
+      const existingCreds = user.naukriCredentials || {};
+
+      let passwordToSave = naukriCreds.password;
+
+      // If password is not provided or empty, preserve existing
+      if (!passwordToSave && existingCreds.password) {
+        passwordToSave = existingCreds.password;
+      }
+
+      console.log(`[Config] Updating Naukri credentials for ${username}`);
+      await userManager.updateNaukriCredentials(username, {
+        username: naukriCreds.email,
+        password: passwordToSave
+      });
+    }
+
+    // 2. Save other settings globally (for now) OR to user profile
+    // Currently, `saveJobConfig` writes to global file. 
+    // We should strictly REMOVE credentials from what we write to disk to avoid leakage.
+
+    // Preserve passwords if not provided (legacy logic for other platforms)
     for (const platform in next.platforms) {
       if (next.platforms[platform].credentials && !next.platforms[platform].credentials.password) {
         if (prev.platforms[platform]?.credentials?.password) {
@@ -2163,16 +2254,26 @@ app.post("/api/jobs/config", (req, res) => {
       }
     }
 
+    // IMPORTANT: Clear Naukri credentials from the file-based config to prevent confusion/leakage
+    if (next.platforms?.naukri?.credentials) {
+      next.platforms.naukri.credentials = {}; // Wipe from file storage
+    }
+
     saveJobConfig(next);
     return res.json({ ok: true });
   } catch (e) {
+    console.error("Error saving config:", e);
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
   }
 });
 
 // Get all jobs
-app.get("/api/jobs", (req, res) => {
+// Get all jobs
+app.get("/api/jobs", async (req, res) => {
   try {
+    const username = req.session.username;
+    const user = await userManager.getUserFull(username);
+
     const filters = {
       platform: req.query.platform,
       applicationStatus: req.query.status,
@@ -2181,7 +2282,7 @@ app.get("/api/jobs", (req, res) => {
       limit: req.query.limit ? parseInt(req.query.limit) : undefined,
     };
 
-    const jobs = jobStorage.getJobs(filters);
+    const jobs = await jobStorage.getJobs(user._id, filters);
     return res.json({ ok: true, jobs });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
@@ -2189,9 +2290,12 @@ app.get("/api/jobs", (req, res) => {
 });
 
 // Get job statistics
-app.get("/api/jobs/stats", (_req, res) => {
+// Get job statistics
+app.get("/api/jobs/stats", async (req, res) => {
   try {
-    const stats = jobStorage.getStats();
+    const username = req.session.username;
+    const user = await userManager.getUserFull(username);
+    const stats = await jobStorage.getStats(user._id);
     return res.json({ ok: true, stats });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
@@ -2248,10 +2352,13 @@ app.post("/api/jobs/test-credentials", async (req, res) => {
 });
 
 // Scrape jobs from a platform
+// Scrape jobs from a platform
 app.post("/api/jobs/scrape", async (req, res) => {
   try {
     const { platform, criteria } = req.body;
     const config = loadJobConfig();
+    const username = req.session.username;
+    const user = await userManager.getUserFull(username);
 
     if (!platform) {
       return res.status(400).json({ ok: false, error: "Platform is required" });
@@ -2264,7 +2371,10 @@ app.post("/api/jobs/scrape", async (req, res) => {
     let jobs = [];
 
     if (platform === "naukri") {
-      scraper = new NaukriScraper({ headless });
+      scraper = new NaukriScraper({
+        headless,
+        userId: user._id
+      });
       jobs = await scraper.scrapeJobs({
         keywords: searchCriteria.keywords,
         location: searchCriteria.location,
@@ -2298,7 +2408,7 @@ app.post("/api/jobs/scrape", async (req, res) => {
       return res.status(400).json({ ok: false, error: "Invalid platform" });
     }
 
-    const result = jobStorage.addJobs(jobs);
+    const result = await jobStorage.addJobs(user._id, jobs);
 
     return res.json({
       ok: true,
@@ -2314,9 +2424,12 @@ app.post("/api/jobs/scrape", async (req, res) => {
 });
 
 // Clear all jobs
-app.post("/api/jobs/clear", (req, res) => {
+// Clear all jobs
+app.post("/api/jobs/clear", async (req, res) => {
   try {
-    const result = jobStorage.clearJobs();
+    const username = req.session.username;
+    const user = await userManager.getUserFull(username);
+    const result = await jobStorage.clearJobs(user._id);
     return res.json({ ok: true, message: "All jobs cleared", total: result.total });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
@@ -2324,17 +2437,20 @@ app.post("/api/jobs/clear", (req, res) => {
 });
 
 // Apply to a specific job
+// Apply to a specific job
 app.post("/api/jobs/apply/:jobId", async (req, res) => {
   try {
     const { jobId } = req.params;
     const { platform } = req.body;
+    const username = req.session.username;
+    const user = await userManager.getUserFull(username);
 
     if (!platform) {
       return res.status(400).json({ ok: false, error: "Platform is required" });
     }
 
     const config = loadJobConfig();
-    const jobs = jobStorage.getJobs({ platform });
+    const jobs = await jobStorage.getJobs(user._id, { platform });
     const job = jobs.find(j => j.jobId === jobId);
 
     if (!job) {
@@ -2349,7 +2465,10 @@ app.post("/api/jobs/apply/:jobId", async (req, res) => {
     let result;
 
     if (platform === "naukri") {
-      const eff = getEffectiveSettings();
+      const username = req.session.username;
+      const user = await userManager.getUserFull(username);
+      const eff = await getEffectiveSettings(username); // Ensure await if async, though getEffective is async now
+
       const userData = {
         dateOfBirth: eff.dateOfBirth,
         totalExperience: eff.totalExperience,
@@ -2365,9 +2484,12 @@ app.post("/api/jobs/apply/:jobId", async (req, res) => {
         if (!userData.totalExperience) userData.totalExperience = extracted.exp;
       }
 
-      const credentials = config.platforms.naukri.credentials;
+      // Use User Credentials instead of Global Config
+      const credentials = user.naukriCredentials || {};
+
       applier = new NaukriApplier({
         headless: config.automation.headless,
+        userId: user._id, // For browser isolation
         credentials,
         userData,
       });
@@ -2412,7 +2534,9 @@ app.post("/api/jobs/auto-apply", async (req, res) => {
       return res.status(400).json({ ok: false, error: `${platform} is not enabled` });
     }
 
-    const allPendingJobs = jobStorage.getPendingJobs(platform, platformConfig.maxAppliesPerDay);
+    const username = req.session.username;
+    const user = await userManager.getUserFull(username);
+    const allPendingJobs = await jobStorage.getPendingJobs(user._id, platform, platformConfig.maxAppliesPerDay);
 
     // Filter to only auto-apply jobs (skip external redirects and manual review)
     const pendingJobs = allPendingJobs.filter(job => {
@@ -2440,7 +2564,8 @@ app.post("/api/jobs/auto-apply", async (req, res) => {
     let results = [];
 
     if (platform === "naukri") {
-      const eff = getEffectiveSettings();
+      const eff = await getEffectiveSettings(username);
+
       const userData = {
         dateOfBirth: eff.dateOfBirth,
         totalExperience: eff.totalExperience,
@@ -2458,7 +2583,8 @@ app.post("/api/jobs/auto-apply", async (req, res) => {
 
       applier = new NaukriApplier({
         headless: config.automation.headless,
-        credentials: platformConfig.credentials,
+        userId: user._id,
+        credentials: user.naukriCredentials || {},
         userData,
       });
 

@@ -2,18 +2,21 @@ const Job = require("./models/Job");
 
 // --- Core Job Functions ---
 
-async function loadJobs() {
-  // Returns object structure expected by some callers, but now fetched from DB
-  const jobs = await Job.find({});
+async function loadJobs(userId) {
+  if (!userId) throw new Error("userId required for loadJobs");
+  const jobs = await Job.find({ userId });
   return { jobs, lastUpdated: new Date() };
 }
 
-async function addJobs(newJobs) {
+async function addJobs(userId, newJobs) {
+  if (!userId) throw new Error("userId required for addJobs");
+
   let addedCount = 0;
   for (const job of newJobs) {
-    const exists = await Job.exists({ platform: job.platform, jobId: job.jobId });
+    const exists = await Job.exists({ userId, platform: job.platform, jobId: job.jobId });
     if (!exists) {
       const newJ = new Job({
+        userId,
         platform: job.platform,
         jobId: job.jobId,
         title: job.title,
@@ -24,26 +27,27 @@ async function addJobs(newJobs) {
         description: job.description,
         isRemote: job.isRemote,
         applicationStatus: "pending",
-        scrapedDate: new Date()
+        scrapedDate: new Date(),
+        applicationType: job.applicationType
       });
       await newJ.save();
       addedCount++;
     } else {
-      // Optional: Update details of existing job? 
-      // For now, we skip overwrite to preserve status
+      // Optional: Update details if needed
     }
   }
-  return { total: await Job.countDocuments(), added: addedCount };
+  return { total: await Job.countDocuments({ userId }), added: addedCount };
 }
 
-async function getJobs(filters = {}) {
-  const query = {};
+async function getJobs(userId, filters = {}) {
+  if (!userId) throw new Error("userId required for getJobs");
+
+  const query = { userId };
 
   if (filters.platform) query.platform = filters.platform;
   if (filters.applicationStatus) query.applicationStatus = filters.applicationStatus;
   if (filters.isRemote !== undefined) query.isRemote = filters.isRemote;
   // dateFrom filter might need Moment or custom logic if string date
-  // Assuming scrapedDate is Date object in DB
   if (filters.dateFrom) query.scrapedDate = { $gte: new Date(filters.dateFrom) };
 
   let q = Job.find(query);
@@ -66,12 +70,14 @@ async function getJobs(filters = {}) {
 }
 
 // Replaces saveJobs (no-op in DB world as we save individually)
-async function saveJobs(data) {
+async function saveJobs(userId, data) {
   // No-op
 }
 
-async function updateJobStatus(platform, jobId, status, metadata = {}) {
-  const query = { platform, jobId };
+async function updateJobStatus(userId, platform, jobId, status, metadata = {}) {
+  if (!userId) throw new Error("userId required for updateJobStatus");
+
+  const query = { userId, platform, jobId };
   const update = { applicationStatus: status, ...metadata };
 
   if (status === "applied") {
@@ -79,19 +85,25 @@ async function updateJobStatus(platform, jobId, status, metadata = {}) {
   }
 
   const res = await Job.updateOne(query, update);
+
+  // Also log to ApplicationLog if needed (not implemented here yet, but status flows to DB)
+
   return res.modifiedCount > 0;
 }
 
-async function getStats() {
-  const total = await Job.countDocuments();
-  const pending = await Job.countDocuments({ applicationStatus: "pending" });
-  const applied = await Job.countDocuments({ applicationStatus: "applied" });
-  const failed = await Job.countDocuments({ applicationStatus: "failed" });
-  const skipped = await Job.countDocuments({ applicationStatus: "skipped" });
-  const remote = await Job.countDocuments({ isRemote: true });
+async function getStats(userId) {
+  if (!userId) throw new Error("userId required for getStats");
+
+  const total = await Job.countDocuments({ userId });
+  const pending = await Job.countDocuments({ userId, applicationStatus: "pending" });
+  const applied = await Job.countDocuments({ userId, applicationStatus: "applied" });
+  const failed = await Job.countDocuments({ userId, applicationStatus: "failed" });
+  const skipped = await Job.countDocuments({ userId, applicationStatus: "skipped" });
+  const remote = await Job.countDocuments({ userId, isRemote: true });
 
   // Platform stats
   const platforms = await Job.aggregate([
+    { $match: { userId } }, // Filter by User
     {
       $group: {
         _id: "$platform",
@@ -111,6 +123,7 @@ async function getStats() {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const appliedToday = await Job.countDocuments({
+    userId,
     applicationStatus: "applied",
     appliedDate: { $gte: startOfDay }
   });
@@ -118,11 +131,14 @@ async function getStats() {
   return { total, pending, applied, failed, skipped, remote, appliedToday, byPlatform };
 }
 
-async function getPendingJobs(platform, dailyLimit = 30) {
+async function getPendingJobs(userId, platform, dailyLimit = 30) {
+  if (!userId) throw new Error("userId required for getPendingJobs");
+
   // Check applied today
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const appliedToday = await Job.countDocuments({
+    userId,
     platform,
     applicationStatus: "applied",
     appliedDate: { $gte: startOfDay }
@@ -131,263 +147,21 @@ async function getPendingJobs(platform, dailyLimit = 30) {
   const remaining = Math.max(0, dailyLimit - appliedToday);
   if (remaining === 0) return [];
 
-  return getJobs({
+  return getJobs(userId, {
     platform,
     applicationStatus: "pending",
     limit: remaining
   });
 }
 
-async function clearJobs() {
-  const res = await Job.deleteMany({});
+async function clearJobs(userId) {
+  if (!userId) throw new Error("userId required for clearJobs");
+  const res = await Job.deleteMany({ userId });
   return { total: res.deletedCount };
 }
 
-// Log is still file based for now? Or should we skip it.
-// Let's comment out logApplication or make it no-op to save time/complexity
-// The user cares about Job Status, effectively logging is less critical.
+// Log is handled by job status update or separate service now
 function logApplication(entry) { }
-
-module.exports = {
-  loadJobs,
-  saveJobs,
-  addJobs,
-  getJobs,
-  updateJobStatus,
-  getStats,
-  getPendingJobs,
-  logApplication,
-  clearJobs,
-};
-
-/**
- * Save jobs to disk
- */
-function saveJobs(data) {
-  const toSave = {
-    ...data,
-    lastUpdated: new Date().toISOString(),
-  };
-  writeJsonAtomic(JOBS_PATH, toSave);
-}
-
-/**
- * Add new jobs to storage (with deduplication)
- */
-function addJobs(newJobs) {
-  const data = loadJobs();
-  const existing = new Map();
-
-  // Index existing jobs by unique key
-  for (const job of data.jobs || []) {
-    const key = `${job.platform}-${job.jobId}`;
-    existing.set(key, job);
-  }
-
-  let addedCount = 0;
-
-  for (const job of newJobs) {
-    const key = `${job.platform}-${job.jobId}`;
-
-    if (!existing.has(key)) {
-      // New job - add it
-      existing.set(key, {
-        ...job,
-        scrapedDate: new Date().toISOString(),
-        applicationStatus: "pending",
-        appliedDate: null,
-      });
-      addedCount++;
-    } else {
-      // Job exists - update certain fields if needed
-      const existingJob = existing.get(key);
-      if (existingJob.applicationStatus === "pending") {
-        // Update job details but preserve application status
-        existing.set(key, {
-          ...job,
-          scrapedDate: existingJob.scrapedDate,
-          applicationStatus: existingJob.applicationStatus,
-          appliedDate: existingJob.appliedDate,
-        });
-      }
-    }
-  }
-
-  data.jobs = Array.from(existing.values());
-  saveJobs(data);
-
-  return { total: data.jobs.length, added: addedCount };
-}
-
-/**
- * Get jobs by filter criteria
- */
-function getJobs(filters = {}) {
-  const data = loadJobs();
-  let jobs = data.jobs || [];
-
-  if (filters.platform) {
-    jobs = jobs.filter(j => j.platform === filters.platform);
-  }
-
-  if (filters.applicationStatus) {
-    jobs = jobs.filter(j => j.applicationStatus === filters.applicationStatus);
-  }
-
-  if (filters.isRemote !== undefined) {
-    jobs = jobs.filter(j => j.isRemote === filters.isRemote);
-  }
-
-  if (filters.dateFrom) {
-    jobs = jobs.filter(j => new Date(j.scrapedDate) >= new Date(filters.dateFrom));
-  }
-
-  if (filters.limit) {
-    jobs = jobs.slice(0, filters.limit);
-  }
-
-  // Add isExternalApply flag for frontend filtering
-  jobs = jobs.map(job => ({
-    ...job,
-    isExternalApply: job.applicationType === "external_redirect" || job.applicationType === "manual_review"
-  }));
-
-  return jobs;
-}
-
-/**
- * Update job application status
- */
-function updateJobStatus(platform, jobId, status, metadata = {}) {
-  const data = loadJobs();
-  const key = `${platform}-${jobId}`;
-
-  const job = data.jobs.find(j => `${j.platform}-${j.jobId}` === key);
-
-  if (job) {
-    job.applicationStatus = status;
-    if (status === "applied") {
-      job.appliedDate = new Date().toISOString();
-    }
-
-    // Add any additional metadata
-    Object.assign(job, metadata);
-
-    saveJobs(data);
-
-    // Log the application
-    logApplication({
-      platform,
-      jobId,
-      jobTitle: job.title,
-      company: job.company,
-      status,
-      timestamp: new Date().toISOString(),
-      ...metadata,
-    });
-
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Log application attempts
- */
-function logApplication(entry) {
-  const log = readJson(APP_LOG_PATH, { applications: [] });
-  log.applications.push(entry);
-
-  // Keep only last 1000 entries
-  if (log.applications.length > 1000) {
-    log.applications = log.applications.slice(-1000);
-  }
-
-  writeJsonAtomic(APP_LOG_PATH, log);
-}
-
-/**
- * Get application statistics
- */
-function getStats() {
-  const data = loadJobs();
-  const jobs = data.jobs || [];
-
-  const stats = {
-    total: jobs.length,
-    pending: jobs.filter(j => j.applicationStatus === "pending").length,
-    applied: jobs.filter(j => j.applicationStatus === "applied").length,
-    failed: jobs.filter(j => j.applicationStatus === "failed").length,
-    skipped: jobs.filter(j => j.applicationStatus === "skipped").length,
-    byPlatform: {},
-    appliedToday: 0,
-    remote: jobs.filter(j => j.isRemote).length,
-  };
-
-  // Count by platform
-  for (const job of jobs) {
-    if (!stats.byPlatform[job.platform]) {
-      stats.byPlatform[job.platform] = {
-        total: 0,
-        pending: 0,
-        applied: 0,
-      };
-    }
-    stats.byPlatform[job.platform].total++;
-    if (job.applicationStatus === "pending") {
-      stats.byPlatform[job.platform].pending++;
-    }
-    if (job.applicationStatus === "applied") {
-      stats.byPlatform[job.platform].applied++;
-    }
-  }
-
-  // Count applications today
-  const today = new Date().toISOString().split("T")[0];
-  stats.appliedToday = jobs.filter(j =>
-    j.applicationStatus === "applied" &&
-    j.appliedDate &&
-    j.appliedDate.startsWith(today)
-  ).length;
-
-  return stats;
-}
-
-/**
- * Get pending jobs for a platform (respecting daily limit)
- */
-function getPendingJobs(platform, dailyLimit = 30) {
-  const stats = getStats();
-  const appliedTodayForPlatform = getJobs({
-    platform,
-    applicationStatus: "applied",
-  }).filter(j => {
-    if (!j.appliedDate) return false;
-    const today = new Date().toISOString().split("T")[0];
-    return j.appliedDate.startsWith(today);
-  }).length;
-
-  const remaining = Math.max(0, dailyLimit - appliedTodayForPlatform);
-
-  if (remaining === 0) {
-    return [];
-  }
-
-  return getJobs({
-    platform,
-    applicationStatus: "pending",
-    limit: remaining,
-  });
-}
-
-/**
- * Clear all jobs from storage
- */
-function clearJobs() {
-  saveJobs({ jobs: [], lastUpdated: new Date().toISOString() });
-  return { total: 0 };
-}
 
 module.exports = {
   loadJobs,

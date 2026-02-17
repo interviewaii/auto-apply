@@ -9,16 +9,13 @@
   "platforms": {
     "naukri": {
       "enabled": true,
-      "credentials": {
-        "email": "vickyjagdale04@gmail.com",
-        "password": "Vicky@2001"
-      },
+      "credentials": {},
       "maxAppliesPerDay": 30
     }
   },
   "automation": {
     "headless": false,
     "autoApplyEnabled": true,
-    "delayBetweenApplications": 10000
+    "delayBetweenApplications": 5000
   }
 }
