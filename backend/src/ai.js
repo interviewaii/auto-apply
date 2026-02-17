@@ -8,7 +8,7 @@ async function generateTailoredEmail({ jd, resumeText, recipientName }) {
     throw new Error("GEMINI_API_KEY is not configured in .env");
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
   const prompt = `
     You are an expert career coach and professional writer. 
@@ -53,7 +53,7 @@ async function findHrNames({ domain }) {
     throw new Error("GEMINI_API_KEY is not configured in .env");
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
   const prompt = `
     You are a professional corporate researcher. 
@@ -108,7 +108,7 @@ async function answerChatbotQuestion({ question, userData, resumeText = "" }) {
     return null; // Will fall back to hardcoded logic
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
   const prompt = `
     You are helping to auto-fill a job application chatbot on Naukri.com.

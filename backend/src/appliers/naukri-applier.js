@@ -40,6 +40,7 @@ class NaukriApplier {
         this.browser = await puppeteer.launch({
             headless: this.headless ? "new" : false,
             userDataDir: userDataDir,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
             args: [
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
@@ -115,7 +116,21 @@ class NaukriApplier {
                 await this.page.type('#passwordField', this.credentials.password, { delay: 50 });
 
                 await this.page.click('button[type="submit"]');
-                await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }).catch(() => { });
+                try {
+                    // Optimized wait: Don't wait for network idle (too slow due to ads)
+                    await this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
+                } catch (e) {
+                    // Ignore navigation timeout, check for element instead
+                }
+
+                // Explicitly wait for success indicator or failure
+                try {
+                    await this.page.waitForFunction(
+                        () => document.body.innerText.toLowerCase().includes('my naukri') ||
+                            document.body.innerText.toLowerCase().includes('view profile'),
+                        { timeout: 5000 }
+                    );
+                } catch (e) { }
 
                 // Re-check login
                 const loginSuccess = await this.page.evaluate(() => {
@@ -375,6 +390,26 @@ class NaukriApplier {
                 console.log('[Naukri] Timeout waiting for manual completion.');
                 return { success: false, reason: 'manual_timeout' };
             }
+
+            // Fallback: Check for success message if not a chatbot or chatbot didn't return
+            const finalSuccess = await this.page.evaluate(() => {
+                const text = document.body.innerText.toLowerCase();
+                return text.includes('applied to') ||
+                    text.includes('successfully applied') ||
+                    text.includes('application sent') ||
+                    text.includes('already applied');
+            });
+
+            if (finalSuccess) {
+                console.log('[Naukri] Success detected (standard flow).');
+                return { success: true, reason: 'standard_success' };
+            }
+
+            // If we clicked apply but couldn't verify, return ambiguous success or strict failure?
+            // For now, let's return false to be safe, or check button state again?
+            console.log('[Naukri] Apply clicked but verification failed. Assuming review needed.');
+            return { success: false, reason: 'verification_failed' };
+
         } catch (error) {
             console.error(`[Naukri] Apply error: ${error.message}`);
             return { success: false, reason: "error", error: error.message };

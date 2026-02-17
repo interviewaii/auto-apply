@@ -13,7 +13,7 @@ let data = {
 
 if (process.env.GEMINI_API_KEY) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     const prompt = `
             You are an expert Resume Writer.
             Target JD: "${jd.substring(0, 3000)}"

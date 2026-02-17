@@ -2307,6 +2307,13 @@ app.post("/api/jobs/test-credentials", async (req, res) => {
   try {
     const { platform, credentials } = req.body;
     const config = loadJobConfig();
+    const username = req.session.username;
+
+    // Fetch user to get userId for browser isolation
+    const user = await userManager.getUserFull(username);
+    if (!user) {
+      return res.status(401).json({ ok: false, error: "User not found" });
+    }
 
     if (!platform) {
       return res.status(400).json({ ok: false, error: "Platform is required" });
@@ -2328,6 +2335,7 @@ app.post("/api/jobs/test-credentials", async (req, res) => {
     if (platform === "naukri") {
       const applier = new NaukriApplier({
         headless: config.automation.headless,
+        userId: user._id,
         credentials: testCreds
       });
       try {
@@ -2335,6 +2343,8 @@ app.post("/api/jobs/test-credentials", async (req, res) => {
       } catch (e) {
         errorMsg = e.message;
       } finally {
+        // Keep open for 20 seconds so user can see the result and intervene if needed
+        await new Promise(r => setTimeout(r, 20000));
         await applier.close();
       }
     } else {
@@ -2358,7 +2368,16 @@ app.post("/api/jobs/scrape", async (req, res) => {
     const { platform, criteria } = req.body;
     const config = loadJobConfig();
     const username = req.session.username;
+
+    // Explicitly check for user session
+    if (!username) {
+      return res.status(401).json({ ok: false, error: "Not logged in" });
+    }
+
     const user = await userManager.getUserFull(username);
+    if (!user || !user._id) {
+      return res.status(401).json({ ok: false, error: "User profile not found. Please re-login." });
+    }
 
     if (!platform) {
       return res.status(400).json({ ok: false, error: "Platform is required" });
@@ -2498,14 +2517,14 @@ app.post("/api/jobs/apply/:jobId", async (req, res) => {
       await applier.close();
 
       if (result.success) {
-        jobStorage.updateJobStatus(platform, jobId, "applied");
+        jobStorage.updateJobStatus(user._id, platform, jobId, "applied");
       } else if (result.reason === "external_redirect") {
-        jobStorage.updateJobStatus(platform, jobId, "skipped", {
+        jobStorage.updateJobStatus(user._id, platform, jobId, "skipped", {
           failureReason: "Manual Apply (Company Site)",
           externalUrl: result.url
         });
       } else {
-        jobStorage.updateJobStatus(platform, jobId, "failed", { failureReason: result.reason });
+        jobStorage.updateJobStatus(user._id, platform, jobId, "failed", { failureReason: result.reason });
       }
     } else {
       return res.status(400).json({ ok: false, error: "Auto-apply not yet implemented for this platform" });
@@ -2595,14 +2614,14 @@ app.post("/api/jobs/auto-apply", async (req, res) => {
 
           // Update job status in real-time
           if (progress.result.success) {
-            jobStorage.updateJobStatus(platform, progress.job.jobId, "applied");
+            jobStorage.updateJobStatus(user._id, platform, progress.job.jobId, "applied");
           } else if (progress.result.reason === "external_redirect") {
-            jobStorage.updateJobStatus(platform, progress.job.jobId, "skipped", {
+            jobStorage.updateJobStatus(user._id, platform, progress.job.jobId, "skipped", {
               failureReason: "Manual Apply (Company Site)",
               externalUrl: progress.result.url
             });
           } else {
-            jobStorage.updateJobStatus(platform, progress.job.jobId, "failed", {
+            jobStorage.updateJobStatus(user._id, platform, progress.job.jobId, "failed", {
               failureReason: progress.result.reason,
             });
           }
@@ -2780,14 +2799,14 @@ app.post("/api/resume/build", async (req, res) => {
     console.log("[ResumeBuilder] Generatng for:", profile.name);
     const pdfBuffer = await generateTailoredResume({ jd, profile });
 
-    // Track usage
-    if (username) {
-      userManager.incrementUserUsage(username);
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      throw new Error("PDF generation resulted in empty file");
     }
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "attachment; filename=resume.pdf");
-    res.send(pdfBuffer);
+    res.setHeader("Content-Length", pdfBuffer.length);
+    res.setHeader("Content-Disposition", 'attachment; filename="resume.pdf"');
+    res.end(pdfBuffer);
 
   } catch (e) {
     console.error(e);

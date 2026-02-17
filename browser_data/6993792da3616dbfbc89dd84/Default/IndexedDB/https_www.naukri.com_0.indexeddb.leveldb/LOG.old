@@ -1,0 +1,6 @@
+2026/02/18-02:46:43.474 888 Reusing MANIFEST F:\JobReach-main\JobReach-main\browser_data\6993792da3616dbfbc89dd84\Default\IndexedDB\https_www.naukri.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/02/18-02:46:43.474 888 Recovering log #3
+2026/02/18-02:46:43.498 888 Reusing old log F:\JobReach-main\JobReach-main\browser_data\6993792da3616dbfbc89dd84\Default\IndexedDB\https_www.naukri.com_0.indexeddb.leveldb/000003.log 
+2026/02/18-02:46:46.048 1c44 Level-0 table #5: started
+2026/02/18-02:46:46.082 1c44 Level-0 table #5: 1952193 bytes OK
+2026/02/18-02:46:46.086 1c44 Delete type=0 #3
