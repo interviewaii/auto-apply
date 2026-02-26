@@ -9,6 +9,7 @@ class GlassdoorScraper {
         this.browser = null;
         this.page = null;
         this.headless = options.headless !== undefined ? options.headless : false;
+        this.options = options;
         this.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     }
 
@@ -23,7 +24,8 @@ class GlassdoorScraper {
         if (this.browser) return;
 
         const path = require("path");
-        const userDataDir = path.join(process.cwd(), "browser_data");
+        const userId = this.options.userId || "default";
+        const userDataDir = path.join(process.cwd(), "browser_data", String(userId));
 
         this.browser = await puppeteer.launch({
             headless: this.headless ? "new" : false,

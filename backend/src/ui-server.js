@@ -2198,6 +2198,9 @@ const GlassdoorScraper = require("./scrapers/glassdoor-scraper");
 const IndeedScraper = require("./scrapers/indeed-scraper");
 const NaukriApplier = require("./appliers/naukri-applier");
 
+// Global lock to prevent multiple scrapers from running at once (RAM safety on Render)
+let IS_SCRAPER_RUNNING = false;
+
 const JOB_CONFIG_PATH = path.resolve(config.paths.root, "data", "job-config.json");
 
 function loadJobConfig() {
@@ -2410,7 +2413,15 @@ app.post("/api/jobs/test-credentials", async (req, res) => {
 // Scrape jobs from a platform
 // Scrape jobs from a platform
 app.post("/api/jobs/scrape", async (req, res) => {
+  if (IS_SCRAPER_RUNNING) {
+    return res.status(429).json({
+      ok: false,
+      error: "The system is currently busy scraping jobs for another user. Please wait 1-2 minutes and try again."
+    });
+  }
+
   try {
+    IS_SCRAPER_RUNNING = true;
     const { platform, criteria } = req.body;
     const config = loadJobConfig();
     const username = req.session.username;
@@ -2450,7 +2461,10 @@ app.post("/api/jobs/scrape", async (req, res) => {
       });
       await scraper.close();
     } else if (platform === "glassdoor") {
-      scraper = new GlassdoorScraper({ headless });
+      scraper = new GlassdoorScraper({
+        headless,
+        userId: user._id
+      });
       jobs = await scraper.scrapeJobs({
         keywords: searchCriteria.keywords,
         location: searchCriteria.location,
@@ -2460,7 +2474,10 @@ app.post("/api/jobs/scrape", async (req, res) => {
       });
       await scraper.close();
     } else if (platform === "indeed") {
-      scraper = new IndeedScraper({ headless });
+      scraper = new IndeedScraper({
+        headless,
+        userId: user._id
+      });
       jobs = await scraper.scrapeJobs({
         keywords: searchCriteria.keywords,
         location: searchCriteria.location,
@@ -2469,7 +2486,8 @@ app.post("/api/jobs/scrape", async (req, res) => {
         maxPages: 5,
       });
       await scraper.close();
-    } else {
+    }
+    else {
       return res.status(400).json({ ok: false, error: "Invalid platform" });
     }
 
@@ -2485,6 +2503,8 @@ app.post("/api/jobs/scrape", async (req, res) => {
   } catch (e) {
     console.error("[jobs/scrape] Error:", e);
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
+  } finally {
+    IS_SCRAPER_RUNNING = false;
   }
 });
 
