@@ -2524,7 +2524,15 @@ app.post("/api/jobs/clear", async (req, res) => {
 // Apply to a specific job
 // Apply to a specific job
 app.post("/api/jobs/apply/:jobId", async (req, res) => {
+  if (IS_SCRAPER_RUNNING) {
+    return res.status(429).json({
+      ok: false,
+      error: "The system is currently busy with another browser task (scraping or applying). Please wait a minute and try again."
+    });
+  }
+
   try {
+    IS_SCRAPER_RUNNING = true;
     const { jobId } = req.params;
     const { platform } = req.body;
     const username = req.session.username;
@@ -2600,12 +2608,22 @@ app.post("/api/jobs/apply/:jobId", async (req, res) => {
   } catch (e) {
     console.error("[jobs/apply] Error:", e);
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
+  } finally {
+    IS_SCRAPER_RUNNING = false;
   }
 });
 
 // Auto-apply to pending jobs
 app.post("/api/jobs/auto-apply", async (req, res) => {
+  if (IS_SCRAPER_RUNNING) {
+    return res.status(429).json({
+      ok: false,
+      error: "The system is currently busy with another browser task (scraping or applying). Please wait a minute and try again."
+    });
+  }
+
   try {
+    IS_SCRAPER_RUNNING = true;
     const { platform } = req.body;
 
     if (!platform) {
@@ -2712,6 +2730,8 @@ app.post("/api/jobs/auto-apply", async (req, res) => {
   } catch (e) {
     console.error("[jobs/auto-apply] Error:", e);
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
+  } finally {
+    IS_SCRAPER_RUNNING = false;
   }
 });
 
