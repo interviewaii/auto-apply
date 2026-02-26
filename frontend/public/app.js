@@ -373,11 +373,21 @@ async function loadDashboardStats() {
             ? `<div style="margin-top:4px"><a href="/api/track/${log.trackingId}" target="_blank" style="color:#60a5fa;font-size:11px;text-decoration:none">â†’ Force Open (Test)</a></div>`
             : "";
 
+          const openedUA = log.openedUA || "";
+          let botTag = "";
+          if (log.opened) {
+            if (openedUA.includes("GoogleImageProxy") || openedUA.includes("Googlebot") || openedUA.includes("bingbot") || openedUA.includes("Baiduspider")) {
+              botTag = `<div style="font-size:10px;color:#facc15;margin-top:2px;opacity:0.8">⚠ Detected: Bot/Security Scanner</div>`;
+            } else if (openedUA !== "") {
+              botTag = `<div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px" title="${escapeHtml(openedUA)}">👤 Human/Client</div>`;
+            }
+          }
+
           return `
             <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
               <td style="padding:12px;font-size:14px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${title}">${title}</td>
               <td style="padding:12px;font-size:14px;${statusClass}">${log.status}</td>
-              <td style="padding:12px;font-size:14px">${openedStatus}${manualLink}</td>
+              <td style="padding:12px;font-size:14px">${openedStatus}${botTag}${manualLink}</td>
               <td style="padding:12px;font-size:13px;color:rgba(255,255,255,0.5)">${date}</td>
             </tr>
           `;
