@@ -140,12 +140,26 @@ class NaukriScraper {
         const jobCardSelectors = [
             ".cust-job-tuple",
             ".srp-jobtuple-wrapper",
+            "[class*='srp-jobtuple']",
+            "[class*='job-tuple']",
+            "[class*='jobTuple']",
             "[data-job-id]",
             ".list article",
             ".jobTuple"
         ];
 
-        await this.page.waitForSelector(jobCardSelectors.join(","), { timeout: 10000 }).catch(() => null);
+        const title = await this.page.title();
+        console.log(`[Naukri] Current page title: "${title}"`);
+
+        // Check for common blocking indicators
+        const content = await this.page.content();
+        if (content.includes("captcha") || content.includes("robot") || content.includes("security check")) {
+            console.warn("[Naukri] Detection triggered! Found blocking keywords in HTML.");
+        }
+
+        await this.page.waitForSelector(jobCardSelectors.join(","), { timeout: 15000 }).catch(() => {
+            console.log("[Naukri] Timeout waiting for job card selectors.");
+        });
 
         const jobs = await this.page.evaluate((selectors) => {
             // Helper to try multiple selectors on an element
