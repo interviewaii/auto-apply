@@ -834,12 +834,23 @@ app.post("/api/settings", async (req, res) => {
 
     // 1. Update SMTP
     const currentSmtp = user.smtpSettings || {};
+    const incomingPort = smtpPort !== undefined ? Number(smtpPort) : currentSmtp.port;
+    // Auto-correct secure flag based on port (465=SSL true, 587=STARTTLS false)
+    let incomingSecure;
+    if (smtpSecure !== undefined) {
+      incomingSecure = Boolean(smtpSecure);
+    } else {
+      incomingSecure = currentSmtp.secure;
+    }
+    if (incomingPort === 465) incomingSecure = true;
+    if (incomingPort === 587) incomingSecure = false;
+
     const newSmtp = {
       host: smtpHost !== undefined ? smtpHost : currentSmtp.host,
-      port: smtpPort !== undefined ? Number(smtpPort) : currentSmtp.port,
-      secure: smtpSecure !== undefined ? Boolean(smtpSecure) : currentSmtp.secure,
+      port: incomingPort,
+      secure: incomingSecure,
       user: smtpUser !== undefined ? smtpUser : currentSmtp.user,
-      pass: smtpPass ? smtpPass : currentSmtp.pass, // Only update pass if provided
+      pass: (smtpPass && smtpPass.trim()) ? smtpPass.trim() : currentSmtp.pass, // Only update if non-empty
       fromEmail: fromEmail !== undefined ? fromEmail : currentSmtp.fromEmail,
       fromName: fromName !== undefined ? fromName : currentSmtp.fromName
     };

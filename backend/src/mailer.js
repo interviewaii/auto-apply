@@ -40,6 +40,10 @@ function createNodeMailerTransport({ smtp, from }) {
       user: smtp.user,
       pass: smtp.pass,
     },
+    // Add timeouts to handle blocked ports faster
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 }
 
