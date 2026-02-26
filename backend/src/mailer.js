@@ -49,7 +49,7 @@ function createNodeMailerTransport({ smtp }) {
 /**
  * Sends email via Brevo HTTP API (Rest API over Port 443)
  */
-async function sendViaBrevoAPI({ apiKey, from, to, toName, subject, text, html, attachments }) {
+async function sendViaBrevoAPI({ apiKey, from, to, toName, subject, text, html, attachments, mailOptions }) {
   console.log(`[brevo-api] Attempting HTTP fallback for ${to}... (Sender: ${from.email})`);
 
   const brevoAttachments = (attachments || []).map(a => {
