@@ -70,10 +70,8 @@ async function createTransporter({ smtp, from }) {
         return fallback;
       } catch (err2) {
         throw new Error(
-          `SMTP connection failed.\n- Primary: ${formatEndpoint(smtp)} -> ${err?.code || "UNKNOWN"}: ${
-            err?.message || err
-          }\n- Fallback: ${formatEndpoint(fallbackSmtp)} -> ${err2?.code || "UNKNOWN"}: ${
-            err2?.message || err2
+          `SMTP connection failed.\n- Primary: ${formatEndpoint(smtp)} -> ${err?.code || "UNKNOWN"}: ${err?.message || err
+          }\n- Fallback: ${formatEndpoint(fallbackSmtp)} -> ${err2?.code || "UNKNOWN"}: ${err2?.message || err2
           }\n\nThis is a network reachability problem (not an auth/password issue). If you're on VPN/corporate Wi‑Fi, or your ISP blocks SMTP ports, switch networks or use an email provider API (SendGrid/Mailgun/Resend) instead of direct SMTP.`,
           { cause: err2 },
         );
@@ -82,16 +80,14 @@ async function createTransporter({ smtp, from }) {
 
     if (String(err?.code || "").toUpperCase() === "ENETUNREACH") {
       throw new Error(
-        `SMTP connection failed: ${formatEndpoint(smtp)} -> ENETUNREACH: ${
-          err?.message || err
+        `SMTP connection failed: ${formatEndpoint(smtp)} -> ENETUNREACH: ${err?.message || err
         }\n\nYour network cannot reach the SMTP server on that port. Try:\n- Set SMTP_PORT=465 and SMTP_SECURE=true (SSL)\n- Disable VPN / try a different Wi‑Fi/network\n- If on a hosted environment, use an email API provider (HTTP) instead of SMTP`,
         { cause: err },
       );
     }
 
     throw new Error(
-      `SMTP connection failed: ${formatEndpoint(smtp)} -> ${err?.code || "UNKNOWN"}: ${
-        err?.message || err
+      `SMTP connection failed: ${formatEndpoint(smtp)} -> ${err?.code || "UNKNOWN"}: ${err?.message || err
       }`,
       { cause: err },
     );
@@ -115,15 +111,14 @@ async function sendApplicationEmail({
   const attachments = [];
   if (resumePath) {
     const abs = path.resolve(resumePath);
-    if (!fs.existsSync(abs)) {
-      throw new Error(
-        `Resume not found at ${abs}. Put your PDF there or set RESUME_PATH in .env`,
-      );
+    if (fs.existsSync(abs)) {
+      attachments.push({
+        filename: path.basename(abs),
+        path: abs,
+      });
+    } else {
+      console.warn(`[mailer] Resume not found at ${abs} — sending email without attachment.`);
     }
-    attachments.push({
-      filename: path.basename(abs),
-      path: abs,
-    });
   }
 
   return await transporter.sendMail({

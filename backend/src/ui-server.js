@@ -29,6 +29,9 @@ connectDB();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Trust Render's reverse proxy so HTTPS cookies / sessions work correctly
+app.set("trust proxy", 1);
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "job-mailer-secret-key-change-me",
@@ -1841,11 +1844,9 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
   try {
     // Limit Check
     if (req.session.username) {
-      const usage = userManager.getUserUsage(req.session.username);
-      const limits = userManager.getUserLimits(req.session.username);
-      // Reset if needed before check (optimistic or helper needed)
-      // For now, simpler:
-      if (usage && usage.dailyCount >= (limits?.dailyEmails || 50)) {
+      const usage = await userManager.getUserUsage(req.session.username);
+      const limits = await userManager.getUserLimits(req.session.username);
+      if (usage && limits && usage.dailyCount >= (limits.dailyEmails || 50)) {
         return res.status(403).json({ ok: false, error: "Daily email limit reached." });
       }
     }
@@ -1858,6 +1859,16 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
     }
 
     // Reuse sender but with our custom text/html when bodyOverride is present.
+    const attachments = [];
+    if (resumePath && fs.existsSync(resumePath)) {
+      attachments.push({
+        filename: req.file?.originalname || path.basename(resumePath),
+        path: resumePath,
+      });
+    } else if (!req.file) {
+      console.warn(`[send] Resume file not found at ${resumePath} — sending without attachment.`);
+    }
+
     const info = bodyOverride
       ? await transporter.sendMail({
         from: eff.from.name ? `"${eff.from.name}" <${eff.from.email}>` : eff.from.email,
@@ -1865,12 +1876,7 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
         subject,
         text,
         html,
-        attachments: [
-          {
-            filename: req.file?.originalname || path.basename(resumePath),
-            path: resumePath,
-          },
-        ],
+        attachments,
       })
       : await sendApplicationEmail({
         transporter,
@@ -1878,7 +1884,7 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
         toEmail,
         toName,
         subject,
-        resumePath,
+        resumePath: fs.existsSync(resumePath) ? resumePath : null,
       });
 
     try {
