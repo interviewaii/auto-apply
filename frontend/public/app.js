@@ -384,10 +384,14 @@ async function loadDefaultsIntoUI() {
       bodyInput.value = String(s.defaultBody || "");
     }
 
+    // Check DB health too
+    const healthRes = await fetch("/api/health").catch(() => null);
+    const healthData = healthRes ? await healthRes.json().catch(() => ({})) : {};
+
     setDefStatus(
       "empty",
-      `Loaded. Saved password: <strong>${s.smtpPassSet ? "yes" : "no"}</strong>. Resume uploaded: <strong>${s.resumeSet ? "yes" : "no"
-      }</strong>.`,
+      `Loaded. Saved password: <strong>${s.smtpPassSet ? "yes" : "no"}</strong>. Resume uploaded: <strong>${s.resumeSet ? "yes" : "no"}</strong>.<br/>
+       <span style="color:${healthData.db === 'connected' ? '#4ade80' : '#facc15'}">Database: <strong>${healthData.db || 'unknown'}</strong></span>`,
     );
   } catch (e) {
     setDefStatus("bad", `<strong>Failed to load.</strong><br/>${escapeHtml(String(e?.message || e))}`);
@@ -1809,55 +1813,93 @@ if (tabResumeBuilder) {
   });
 }
 
-// Generate Resume Button
+// Generate Resume Button (shared helper)
+async function generateResume(format) {
+  const jd = $("#rbJd")?.value?.trim();
+  const rbStatus = $("#rbStatus");
+
+  function setRbStatus(type, msg) {
+    if (!rbStatus) return;
+    rbStatus.className = "status " + type;
+    rbStatus.innerHTML = msg;
+  }
+
+  if (!jd) {
+    setRbStatus("bad", "⚠️ Please paste a Job Description first.");
+    return;
+  }
+
+  const profile = {
+    name: $("#rbName")?.value?.trim(),
+    email: $("#rbEmail")?.value?.trim(),
+    phone: $("#rbPhone")?.value?.trim(),
+    linkedin: $("#rbLinkedin")?.value?.trim(),
+    skills: $("#rbSkills")?.value?.trim(),
+    experience: $("#rbExperience")?.value?.trim(),
+    projects: $("#rbProjects")?.value?.trim(),
+    education: $("#rbEducation")?.value?.trim()
+  };
+
+  if (!profile.name || !profile.experience) {
+    setRbStatus("bad", "⚠️ Please fill in at least <strong>Name</strong> and <strong>Experience</strong> in your Master Profile.");
+    return;
+  }
+
+  const pdfBtn = $("#rbGenerateBtn");
+  const docxBtn = $("#rbGenerateDocxBtn");
+  if (pdfBtn) { pdfBtn.disabled = true; }
+  if (docxBtn) { docxBtn.disabled = true; }
+
+  const endpoint = format === "docx" ? "/api/resume/build-docx" : "/api/resume/build";
+  const ext = format === "docx" ? "docx" : "pdf";
+  setRbStatus("empty", `⏳ Generating tailored ${ext.toUpperCase()}… this may take 30–60 seconds.`);
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jd, profile })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Server error (${res.status})`);
+    }
+
+    const blob = await res.blob();
+    if (blob.size < 100) {
+      throw new Error("Generated file is empty or corrupt. Check server logs.");
+    }
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safeName = (profile.name || "resume").replace(/\s+/g, "_");
+    a.download = `Tailored_Resume_${safeName}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    setRbStatus("good", `✅ <strong>${ext.toUpperCase()} downloaded!</strong> Check your downloads folder.`);
+    toast("good", "Resume Ready", `Tailored ${ext.toUpperCase()} downloaded successfully!`);
+
+  } catch (e) {
+    const msg = String(e?.message || e);
+    setRbStatus("bad", `❌ <strong>Error:</strong> ${escapeHtml(msg)}`);
+    toast("bad", "Generation Failed", msg);
+  } finally {
+    if (pdfBtn) { pdfBtn.disabled = false; }
+    if (docxBtn) { docxBtn.disabled = false; }
+  }
+}
+
 const rbGenerateBtn = $("#rbGenerateBtn");
 if (rbGenerateBtn) {
-  rbGenerateBtn.addEventListener("click", async () => {
-    const jd = $("#rbJd")?.value?.trim();
-    if (!jd) { alert("Please paste a Job Description first."); return; }
+  rbGenerateBtn.addEventListener("click", () => generateResume("pdf"));
+}
 
-    const profile = {
-      name: $("#rbName")?.value,
-      email: $("#rbEmail")?.value,
-      phone: $("#rbPhone")?.value,
-      linkedin: $("#rbLinkedin")?.value,
-      skills: $("#rbSkills")?.value,
-      experience: $("#rbExperience")?.value,
-      education: $("#rbEducation")?.value
-    };
-
-    if (!profile.name || !profile.experience) {
-      alert("Please fill in at least Name and Experience in your Master Profile.");
-      return;
-    }
-
-    const originalText = rbGenerateBtn.textContent;
-    rbGenerateBtn.textContent = "Generating PDF...";
-    rbGenerateBtn.disabled = true;
-
-    try {
-      const res = await fetch("/api/resume/build", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jd, profile })
-      });
-
-      if (!res.ok) throw new Error("Generation failed");
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Tailored_Resume_${profile.name.replace(/\s+/g, "_")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-    } catch (e) {
-      alert("Error: " + e.message);
-    } finally {
-      rbGenerateBtn.textContent = originalText;
-      rbGenerateBtn.disabled = false;
-    }
-  });
+const rbGenerateDocxBtn = $("#rbGenerateDocxBtn");
+if (rbGenerateDocxBtn) {
+  rbGenerateDocxBtn.addEventListener("click", () => generateResume("docx"));
 }

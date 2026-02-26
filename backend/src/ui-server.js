@@ -77,10 +77,23 @@ function parseEmailsFromText(raw) {
   return out;
 }
 
-// ... (ATS scoring helpers unchanged) ...
-// (Skipping to Auth/Routes to update async calls)
+app.get("/health", (req, res) => {
+  const mongoose = require("mongoose");
+  res.json({
+    ok: true,
+    status: "running",
+    db: mongoose.connection.readyState === 1 ? "connected" : "connecting/disconnected",
+    uptime: process.uptime()
+  });
+});
 
-// --- Auth Middleware ---
+app.get("/api/health", (req, res) => {
+  const mongoose = require("mongoose");
+  res.json({
+    ok: true,
+    db: mongoose.connection.readyState === 1 ? "connected" : "connecting/disconnected"
+  });
+});
 
 async function requireAuth(req, res, next) {
   if (!req.session || !req.session.username) {
