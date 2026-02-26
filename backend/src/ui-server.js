@@ -2,6 +2,8 @@ const express = require("express");
 const multer = require("multer");
 const os = require("os");
 const path = require("path");
+// Ensure Puppeteer finds Chrome in the project folder (for Render)
+process.env.PUPPETEER_CACHE_DIR = path.join(process.cwd(), "chrome-cache");
 const fs = require("fs");
 const { spawnSync } = require("child_process");
 const XLSX = require("xlsx");
@@ -367,7 +369,9 @@ function computeAts({ resumeText, jdText }) {
 }
 
 function commandExists(cmd) {
-  const r = spawnSync("which", [cmd], { stdio: "ignore" });
+  // Use 'where' on Windows, 'which' on Linux/Mac
+  const whichCmd = process.platform === "win32" ? "where" : "which";
+  const r = spawnSync(whichCmd, [cmd], { stdio: "ignore" });
   return r.status === 0;
 }
 
@@ -702,7 +706,7 @@ app.post("/api/generate-email", upload.single("resume"), async (req, res) => {
         if (orig.endsWith(".docx")) resumeText = await extractDocxText(filePath);
         else if (orig.endsWith(".pdf")) resumeText = await extractPdfText(filePath);
       } else {
-        const eff = getEffectiveSettings(req.session.username);
+        const eff = await getEffectiveSettings(req.session.username);
         if (eff.resumePath && fs.existsSync(eff.resumePath)) {
           resumeText = await extractPdfText(eff.resumePath);
         }
@@ -1321,7 +1325,7 @@ app.post("/api/auto-apply", async (req, res) => {
     }
 
     const provider = String(req.body.provider || HR_PROVIDER_DEFAULT || "hunter").trim().toLowerCase();
-    const eff = getEffectiveSettings(req.session.username);
+    const eff = await getEffectiveSettings(req.session.username);
     const transporter = await createTransporter({ smtp: eff.smtp, from: eff.from });
 
     const campaignResults = [];
@@ -1806,7 +1810,7 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
     return res.status(400).json({ ok: false, error: "Valid email is required." });
   }
 
-  const eff = getEffectiveSettings();
+  const eff = await getEffectiveSettings(req.session.username);
   const subject = subjectOverride || eff.subject || config.content.subject;
 
   // Decide content: override only if user provided body.
@@ -1967,7 +1971,7 @@ app.post(
 
     console.log(`[ui] bulk parsed rows: ${rows.length}`);
 
-    const eff = getEffectiveSettings();
+    const eff = await getEffectiveSettings(req.session.username);
     const resumePath = resumeFile?.path ? resumeFile.path : eff.resumePath;
     const transporter = await createTransporter({ smtp: eff.smtp, from: eff.from });
 
@@ -2065,7 +2069,7 @@ app.post("/api/send-list", upload.single("resume"), async (req, res) => {
 
   console.log(`[ui] list send requested: emails=${emails.length} resume=${req.file?.originalname || "(default)"}`);
 
-  const eff = getEffectiveSettings();
+  const eff = await getEffectiveSettings(req.session.username);
   const resumePath = req.file?.path ? req.file.path : eff.resumePath;
   const transporter = await createTransporter({ smtp: eff.smtp, from: eff.from });
 
@@ -2750,66 +2754,56 @@ server.on("error", (err) => {
 
 // --- RESUME BUILDER API ---
 // Lazy load service to avoid startup errors if dependencies missing
+
+// Build PDF resume
 app.post("/api/resume/build", async (req, res) => {
   try {
-    const { generateTailoredResume } = require("./services/resume-builder");
+    const { generateTailoredResumePDF } = require("./services/resume-builder");
     const { jd, profile } = req.body;
     if (!jd || !profile) return res.status(400).json({ error: "Missing JD or Profile" });
 
-    // Check Limits
     const username = req.session.username;
-    const limits = userManager.getUserLimits(username) || { dailyResumes: 10 };
-    const usage = userManager.getUserUsage(username);
+    console.log("[ResumeBuilder] Generating PDF for:", profile.name);
+    const pdfBuffer = await generateTailoredResumePDF({ jd, profile });
 
-    // Reset usage if needed (daily reset logic is inside incrementUserUsage, but we need fresh stats)
-    // We'll trust incrementUserUsage to handle date checks, but we need to check current count first.
-    // Ideally, we should have a `checkLimit` function, but we can rely on usage.dailyCount for now
-    // NOTE: This simple check assumes usage.dailyCount is from today. 
-    // To be robust, we should call a helper that resets if needed *before* checking.
-    // For now, let's just use incrementUserUsage logic which resets it.
-
-    // Actually, let's peek at the usage securely
-    // In a real app, we'd have a `checkLimit(username, 'resume')` function.
-    // For now, we will just increment and if it exceeds, we block (optimistic) 
-    // OR check first. Let's check first by calling a reset-only helper?
-    // Simplified:
-
-    if (usage && usage.lastReset) {
-      const now = new Date();
-      const last = new Date(usage.lastReset);
-      if (now.getDate() !== last.getDate()) usage.dailyCount = 0; // Local view reset
+    // Track usage
+    if (username) {
+      userManager.incrementUserUsage(username);
     }
 
-    // Resume Limit Check (shared with specific "dailyResumes" counter if we had one, 
-    // but users.js mainly tracks `dailyCount` which is generic. 
-    // Let's assume dailyCount is for EMAILS and we need a separate track for Resumes?
-    // users.js `usage` object only has `dailyCount`. 
-    // Let's add `dailyResumesCount` to usage in users.js OR just use dailyCount for everything?
-    // The previous prompt implementation added `dailyEmails` and `dailyResumes` in LIMITS, 
-    // but `usage` only has `dailyCount`. 
-    // Let's implement a specific resume counter patch in users.js later if strictness is needed.
-    // For now, we will count Resumes towards the "Daily Usage" or just assume infinite if not tracked?
-    // WAIT, the User Request explicitly asked for "how many time use which feature".
-    // I should probably add `resumeCount` to user usage.
-    // For this step, I will stick to what's available and maybe add a TODO or basic tracking.
-
-    // Let's block if dailyCount > limit * 2 (as a safety net)
-    // or better, just track it.
-
-    console.log("[ResumeBuilder] Generatng for:", profile.name);
-    const pdfBuffer = await generateTailoredResume({ jd, profile });
-
-    if (!pdfBuffer || pdfBuffer.length === 0) {
-      throw new Error("PDF generation resulted in empty file");
-    }
-
+    const safeName = (profile.name || "resume").replace(/[^a-zA-Z0-9_\-]/g, "_");
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Length", pdfBuffer.length);
-    res.setHeader("Content-Disposition", 'attachment; filename="resume.pdf"');
+    res.setHeader("Content-Disposition", `attachment; filename=Tailored_Resume_${safeName}.pdf`);
     res.end(pdfBuffer);
 
   } catch (e) {
-    console.error(e);
+    console.error("[ResumeBuilder] PDF error:", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Build DOCX resume
+app.post("/api/resume/build-docx", async (req, res) => {
+  try {
+    const { generateTailoredResumeDOCX } = require("./services/resume-builder");
+    const { jd, profile } = req.body;
+    if (!jd || !profile) return res.status(400).json({ error: "Missing JD or Profile" });
+
+    const username = req.session.username;
+    console.log("[ResumeBuilder] Generating DOCX for:", profile.name);
+    const docxBuffer = await generateTailoredResumeDOCX({ jd, profile });
+
+    if (username) {
+      userManager.incrementUserUsage(username);
+    }
+
+    const safeName = (profile.name || "resume").replace(/[^a-zA-Z0-9_\-]/g, "_");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.setHeader("Content-Disposition", `attachment; filename=Tailored_Resume_${safeName}.docx`);
+    res.end(docxBuffer);
+
+  } catch (e) {
+    console.error("[ResumeBuilder] DOCX error:", e);
     res.status(500).json({ error: e.message });
   }
 });

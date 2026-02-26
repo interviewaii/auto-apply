@@ -37,14 +37,30 @@ class NaukriApplier {
         const userDataDir = path.join(process.cwd(), "browser_data", String(this.userId));
         console.log(`[NaukriApplier] Initializing browser for user: ${this.userId}`);
 
+        const fs = require('fs');
+        let execPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        if (execPath && !fs.existsSync(execPath)) {
+            console.warn(`[NaukriApplier] Custom Chrome path not found: ${execPath}. Using bundled Chrome.`);
+            execPath = undefined;
+        }
+
+        // On Linux (Render/server), always force headless — no display available
+        const isLinux = process.platform === "linux" || !!process.env.RENDER;
+        const useHeadless = (this.headless || isLinux) ? "new" : false;
+
         this.browser = await puppeteer.launch({
-            headless: this.headless ? "new" : false,
+            headless: useHeadless,
             userDataDir: userDataDir,
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+            executablePath: execPath,
             args: [
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
+                "--disable-dev-shm-usage",
+                "--no-first-run",
+                "--no-zygote",
+                "--single-process",
+                "--disable-gpu",
                 "--disable-blink-features=AutomationControlled",
                 "--start-maximized"
             ],
