@@ -75,6 +75,12 @@ async function sendViaBrevoAPI({ apiKey, from, to, toName, subject, text, html, 
     textContent: text,
   };
 
+  // Inject tracking pixel into HTML if trackingId and trackingBaseUrl are provided
+  if (html && mailOptions?.trackingId && mailOptions?.trackingBaseUrl) {
+    const trackingUrl = `${mailOptions.trackingBaseUrl}/api/track/${mailOptions.trackingId}`;
+    payload.htmlContent = html + `<img src="${trackingUrl}" width="1" height="1" style="display:none;" />`;
+  }
+
   if (brevoAttachments.length) {
     payload.attachment = brevoAttachments;
   }
@@ -124,7 +130,8 @@ async function createTransporter({ smtp, from }) {
             subject: mailOptions.subject,
             text: mailOptions.text,
             html: mailOptions.html,
-            attachments: mailOptions.attachments
+            attachments: mailOptions.attachments,
+            mailOptions: mailOptions // Pass original options for trackingId
           });
         }
         throw err;
@@ -152,6 +159,8 @@ async function sendApplicationEmail({
   toName,
   subject,
   resumePath,
+  trackingId,
+  trackingBaseUrl,
 }) {
   const { text, html } = buildEmail({
     recipientName: toName,
@@ -172,14 +181,22 @@ async function sendApplicationEmail({
     }
   }
 
+  let finalHtml = html;
+  if (trackingId && trackingBaseUrl) {
+    const trackingUrl = `${trackingBaseUrl}/api/track/${trackingId}`;
+    finalHtml += `<img src="${trackingUrl}" width="1" height="1" style="display:none;" />`;
+  }
+
   return await transporter.sendMail({
     from: from.name ? `"${from.name}" <${from.email}>` : from.email,
     to: toEmail,
     toName,
     subject,
     text,
-    html,
+    html: finalHtml,
     attachments,
+    trackingId, // Pass through to transporter for Brevo fallback if needed
+    trackingBaseUrl,
   });
 }
 

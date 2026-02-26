@@ -24,6 +24,7 @@ const { readJson, writeJsonAtomic, ensureDir } = require("./utils");
 const session = require("express-session");
 const userManager = require("./users");
 const connectDB = require("./db"); // MongoDB Connection
+const ApplicationLog = require("./models/ApplicationLog");
 
 // Connect to DB immediately
 connectDB();
@@ -104,16 +105,120 @@ async function requireAuth(req, res, next) {
     return res.redirect("/login.html");
   }
 
-  // Check ban status on every request (async now)
-  const banned = await userManager.isBanned(req.session.username);
-  if (banned) {
-    req.session.destroy();
-    const isApi = req.path.startsWith("/api/");
-    if (isApi) return res.status(403).json({ ok: false, error: "Your account has been banned. Contact admin." });
-    return res.redirect("/login.html");
+  try {
+    // Check ban status on every request
+    const banned = await userManager.isBanned(req.session.username);
+    if (banned) {
+      req.session.destroy();
+      const isApi = req.path.startsWith("/api/");
+      if (isApi) return res.status(403).json({ ok: false, error: "Your account has been banned. Contact admin." });
+      return res.redirect("/login.html");
+    }
+
+    // Ensure userId is in session
+    if (!req.session.userId) {
+      const user = await userManager.getUser(req.session.username);
+      if (user) req.session.userId = user._id;
+    }
+
+    return next();
+  } catch (err) {
+    console.error("Auth middleware error:", err);
+    return res.status(500).json({ ok: false, error: "Internal server error" });
   }
-  return next();
 }
+
+// -------------------------
+// Email Tracking System
+// -------------------------
+
+// GET /api/track/:trackingId - Tracking pixel endpoint
+app.get("/api/track/:trackingId", async (req, res) => {
+  const { trackingId } = req.params;
+  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+  try {
+    console.log(`[Tracking] Request for ID: "${trackingId}" from IP: ${ip}`);
+
+    // Find the log entry first to see if it even exists (for better logging)
+    const existing = await ApplicationLog.findOne({ trackingId });
+    if (!existing) {
+      console.log(`[Tracking] ID "${trackingId}" not found in database.`);
+    } else if (existing.opened) {
+      console.log(`[Tracking] ID "${trackingId}" was already marked as opened at ${existing.openedAt}`);
+    }
+
+    // Update the log entry
+    const updated = await ApplicationLog.findOneAndUpdate(
+      { trackingId: trackingId, opened: false },
+      {
+        opened: true,
+        openedAt: new Date(),
+        openedIp: ip,
+      },
+      {
+        new: true, // Standard Mongoose option
+        returnDocument: 'after', // Ensure modern driver compatibility
+        lean: true
+      }
+    );
+
+    if (updated) {
+      console.log(`[Tracking] Success! Marked ID "${trackingId}" as opened for user: ${updated.userId}`);
+    } else {
+      console.log(`[Tracking] No update performed for ID "${trackingId}".`);
+    }
+  } catch (err) {
+    console.error(`[Tracking] Error updating ${trackingId}:`, err.message);
+  }
+
+  // Return a 1x1 transparent GIF
+  const pixel = Buffer.from(
+    "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+    "base64"
+  );
+  res.set({
+    "Content-Type": "image/gif",
+    "Content-Length": pixel.length,
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+  });
+  res.send(pixel);
+});
+
+// GET /api/dashboard/stats - Get tracking stats
+app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId; // Assuming we store userId in session
+    if (!userId) {
+      // Fallback to finding by username if userId isn't in session yet
+      const user = await userManager.getUser(req.session.username);
+      if (!user) return res.status(404).json({ ok: false, error: "User not found" });
+      req.session.userId = user._id;
+    }
+
+    const totalSent = await ApplicationLog.countDocuments({ userId: req.session.userId, type: "email" });
+    const totalOpened = await ApplicationLog.countDocuments({ userId: req.session.userId, type: "email", opened: true });
+
+    // Get recent applications
+    const recentLogs = await ApplicationLog.find({ userId: req.session.userId })
+      .sort({ timestamp: -1 })
+      .limit(10);
+
+    res.json({
+      ok: true,
+      stats: {
+        totalSent,
+        totalOpened,
+        openedRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
+      },
+      recentLogs
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
 function requireAdmin(req, res, next) {
   if (!req.session || !req.session.isAdmin) {
@@ -140,8 +245,9 @@ app.post("/api/register", async (req, res) => {
   try {
     const { user, pass } = req.body;
     if (!user || !pass) return res.status(400).json({ ok: false, error: "Username and password required" });
-    await userManager.createUser(user, pass);
+    const newUser = await userManager.createUser(user, pass);
     req.session.username = user;
+    req.session.userId = newUser._id;
     req.session.role = "user";
     return res.json({ ok: true, username: user });
   } catch (e) {
@@ -164,6 +270,8 @@ app.post("/api/login", async (req, res) => {
   }
 
   req.session.username = user;
+  const dbUser = await userManager.getUser(user);
+  req.session.userId = dbUser._id;
   req.session.role = await userManager.getUserRole(user);
 
   // Force save session before response
@@ -1387,9 +1495,12 @@ app.post("/api/auto-apply", async (req, res) => {
           }
 
           const resumePath = eff.resumePath;
+          const trackingId = crypto.randomBytes(16).toString("hex");
+          const trackingBaseUrl = req.protocol + '://' + req.get('host');
+          console.log(`[Email] Sending with trackingId: ${trackingId}, BaseUrl: ${trackingBaseUrl}`);
 
           try {
-            const info = await transporter.sendMail({
+            await transporter.sendMail({
               from: eff.from.name ? `"${eff.from.name}" <${eff.from.email}>` : eff.from.email,
               to: contact.email,
               subject,
@@ -1401,6 +1512,19 @@ app.post("/api/auto-apply", async (req, res) => {
                   path: resumePath,
                 },
               ],
+              trackingId, // Pass trackingId to transporter
+              trackingBaseUrl,
+            });
+
+            // Log to MongoDB
+            await ApplicationLog.create({
+              userId: req.session.userId,
+              type: "email",
+              status: "success",
+              recipientEmail: contact.email,
+              subject: subject,
+              trackingId: trackingId,
+              details: "Auto-apply campaign email sent"
             });
 
             appendSentRow(config.paths.sentXlsx, {
@@ -1412,6 +1536,14 @@ app.post("/api/auto-apply", async (req, res) => {
 
             domainResult.contacts.push({ email: contact.email, name: contact.name, ok: true });
           } catch (sendErr) {
+            await ApplicationLog.create({
+              userId: req.session.userId,
+              type: "email",
+              status: "failed",
+              recipientEmail: contact.email,
+              subject: subject,
+              details: String(sendErr?.message || sendErr)
+            });
             appendSentRow(config.paths.sentXlsx, {
               email: contact.email,
               name: contact.name,
@@ -1905,6 +2037,10 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
       console.warn(`[send] Resume file not found at ${resumePath} — sending without attachment.`);
     }
 
+    const trackingId = crypto.randomBytes(16).toString("hex");
+    const trackingBaseUrl = req.protocol + '://' + req.get('host');
+    console.log(`[Email] Direct send trackingId: ${trackingId}, BaseUrl: ${trackingBaseUrl}`);
+
     const info = bodyOverride
       ? await transporter.sendMail({
         from: eff.from.name ? `"${eff.from.name}" <${eff.from.email}>` : eff.from.email,
@@ -1914,6 +2050,8 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
         text,
         html,
         attachments,
+        trackingId,
+        trackingBaseUrl,
       })
       : await sendApplicationEmail({
         transporter,
@@ -1922,7 +2060,20 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
         toName,
         subject,
         resumePath: fs.existsSync(resumePath) ? resumePath : null,
+        trackingId,
+        trackingBaseUrl,
       });
+
+    // Log to MongoDB
+    await ApplicationLog.create({
+      userId: req.session.userId,
+      type: "email",
+      status: "success",
+      recipientEmail: toEmail,
+      subject: subject,
+      trackingId: trackingId,
+      details: "Direct email sent"
+    });
 
     try {
       appendSentRow(config.paths.sentXlsx, {
@@ -1955,6 +2106,15 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
         name: toName,
         subject,
         error: String(e?.message || e),
+      });
+
+      await ApplicationLog.create({
+        userId: req.session.userId,
+        type: "email",
+        status: "failed",
+        recipientEmail: toEmail,
+        subject: subject,
+        details: String(e?.message || e)
       });
     } catch (logErr) {
       console.error("[excel-log] Failed to log failed email:", logErr?.message || logErr);
@@ -2046,6 +2206,9 @@ app.post(
 
       try {
         console.log(`[ui] bulk sending -> ${r.email}`);
+        const trackingId = crypto.randomBytes(16).toString("hex");
+        const trackingBaseUrl = req.protocol + '://' + req.get('host');
+
         const info = await transporter.sendMail({
           from: eff.from.name ? `"${eff.from.name}" <${eff.from.email}>` : eff.from.email,
           to: r.email,
@@ -2058,6 +2221,19 @@ app.post(
               path: resumePath,
             },
           ],
+          trackingId,
+          trackingBaseUrl,
+        });
+
+        // Log to MongoDB
+        await ApplicationLog.create({
+          userId: req.session.userId,
+          type: "email",
+          status: "success",
+          recipientEmail: r.email,
+          subject: subject,
+          trackingId: trackingId,
+          details: "Bulk Excel email sent"
         });
         console.log(`[ui] bulk sent OK -> ${r.email} (messageId=${info.messageId || "n/a"})`);
         try {
@@ -2079,6 +2255,15 @@ app.post(
             name: String(r.name || ""),
             subject,
             error: String(e?.message || e),
+          });
+
+          await ApplicationLog.create({
+            userId: req.session.userId,
+            type: "email",
+            status: "failed",
+            recipientEmail: r.email,
+            subject: subject,
+            details: String(e?.message || e)
           });
         } catch (logErr) {
           console.error("[excel-log] Failed to log bulk failed email:", logErr?.message || logErr);
@@ -2142,6 +2327,9 @@ app.post("/api/send-list", upload.single("resume"), async (req, res) => {
     }
     try {
       console.log(`[ui] list sending -> ${email}`);
+      const trackingId = crypto.randomBytes(16).toString("hex");
+      const trackingBaseUrl = req.protocol + '://' + req.get('host');
+
       const info = await transporter.sendMail({
         from: eff.from.name ? `"${eff.from.name}" <${eff.from.email}>` : eff.from.email,
         to: email,
@@ -2154,6 +2342,18 @@ app.post("/api/send-list", upload.single("resume"), async (req, res) => {
             path: resumePath,
           },
         ],
+        trackingId,
+        trackingBaseUrl,
+      });
+
+      await ApplicationLog.create({
+        userId: req.session.userId,
+        type: "email",
+        status: "success",
+        recipientEmail: email,
+        subject: subject,
+        trackingId,
+        details: "List email sent"
       });
       try {
         appendSentRow(config.paths.sentXlsx, {
@@ -2173,6 +2373,15 @@ app.post("/api/send-list", upload.single("resume"), async (req, res) => {
           name: "",
           subject,
           error: String(e?.message || e),
+        });
+
+        await ApplicationLog.create({
+          userId: req.session.userId,
+          type: "email",
+          status: "failed",
+          recipientEmail: email,
+          subject: subject,
+          details: String(e?.message || e)
         });
       } catch (logErr) {
         console.error("[excel-log] Failed to log list failed email:", logErr?.message || logErr);
@@ -2589,11 +2798,20 @@ app.post("/api/jobs/apply/:jobId", async (req, res) => {
         userData,
       });
 
-      result = await applier.applyToJob(job.url);
-      await applier.close();
-
       if (result.success) {
         jobStorage.updateJobStatus(user._id, platform, jobId, "applied");
+        // Log to MongoDB for dashboard
+        await ApplicationLog.create({
+          userId: req.session.userId,
+          type: "application",
+          status: "success",
+          jobId: jobId,
+          jobTitle: job.title,
+          company: job.company,
+          jobUrl: job.url,
+          trackingId: crypto.randomBytes(16).toString("hex"),
+          details: "Job applied via Naukri Automation"
+        });
       } else if (result.reason === "external_redirect") {
         jobStorage.updateJobStatus(user._id, platform, jobId, "skipped", {
           failureReason: "Manual Apply (Company Site)",
@@ -2607,8 +2825,21 @@ app.post("/api/jobs/apply/:jobId", async (req, res) => {
     }
 
     return res.json({ ok: true, result });
+
   } catch (e) {
     console.error("[jobs/apply] Error:", e);
+    // Log failure
+    try {
+      if (req.session.userId) {
+        await ApplicationLog.create({
+          userId: req.session.userId,
+          type: "application",
+          status: "failed",
+          jobId: req.params.jobId,
+          details: String(e?.message || e)
+        });
+      }
+    } catch (logErr) { }
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
   } finally {
     IS_SCRAPER_RUNNING = false;
@@ -2698,9 +2929,20 @@ app.post("/api/jobs/auto-apply", async (req, res) => {
         onProgress: (progress) => {
           console.log(`[auto-apply] ${progress.current}/${progress.total} - ${progress.job.title}`);
 
-          // Update job status in real-time
+          // Update job status and log in real-time
           if (progress.result.success) {
             jobStorage.updateJobStatus(user._id, platform, progress.job.jobId, "applied");
+            ApplicationLog.create({
+              userId: user._id,
+              type: "application",
+              status: "success",
+              jobId: progress.job.jobId,
+              jobTitle: progress.job.title,
+              company: progress.job.company,
+              jobUrl: progress.job.url,
+              trackingId: crypto.randomBytes(16).toString("hex"),
+              details: "Bulk auto-apply successful"
+            }).catch(e => console.error("Auto-apply log error:", e));
           } else if (progress.result.reason === "external_redirect") {
             jobStorage.updateJobStatus(user._id, platform, progress.job.jobId, "skipped", {
               failureReason: "Manual Apply (Company Site)",
@@ -2710,6 +2952,13 @@ app.post("/api/jobs/auto-apply", async (req, res) => {
             jobStorage.updateJobStatus(user._id, platform, progress.job.jobId, "failed", {
               failureReason: progress.result.reason,
             });
+            ApplicationLog.create({
+              userId: user._id,
+              type: "application",
+              status: "failed",
+              jobId: progress.job.jobId,
+              details: progress.result.reason
+            }).catch(e => console.error("Auto-apply log error:", e));
           }
         },
       });

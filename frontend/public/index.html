@@ -34,7 +34,8 @@
     </header>
 
     <div class="tabs">
-      <button class="tab active" id="tabSend" type="button">Direct Send</button>
+      <button class="tab active" id="tabDashboard" type="button">📊 Dashboard</button>
+      <button class="tab" id="tabSend" type="button">Direct Send</button>
       <button class="tab" id="tabAts" type="button">ATS Optimizer</button>
       <button class="tab" id="tabHr" type="button">HR Finder</button>
       <button class="tab" id="tabAuto" type="button">Auto Apply</button>
@@ -43,7 +44,54 @@
     </div>
 
     <main class="grid">
-      <section class="card tabPanel" id="panelSend">
+      <!-- DASHBOARD PANEL -->
+      <section class="tabPanel" id="panelDashboard">
+        <div class="cardTitle">Application Stats</div>
+        <div class="cardHint">Track your email opens and application status in real-time.</div>
+
+        <div class="statsGrid"
+          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:30px">
+          <div class="statCard"
+            style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.1)">
+            <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:8px">Total Emails Sent</div>
+            <div id="dashTotalSent" style="font-size:32px;font-weight:bold;color:#60a5fa">0</div>
+          </div>
+          <div class="statCard"
+            style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.1)">
+            <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:8px">Emails Opened</div>
+            <div id="dashTotalOpened" style="font-size:32px;font-weight:bold;color:#34d399">0</div>
+          </div>
+          <div class="statCard"
+            style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.1)">
+            <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:8px">Open Rate</div>
+            <div id="dashOpenRate" style="font-size:32px;font-weight:bold;color:#fbbf24">0%</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardTitle">Recent Activity</div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;margin-top:10px">
+              <thead>
+                <tr style="text-align:left;border-bottom:1px solid rgba(255,255,255,0.1)">
+                  <th style="padding:12px;color:rgba(255,255,255,0.6);font-size:13px">Recipient / Job</th>
+                  <th style="padding:12px;color:rgba(255,255,255,0.6);font-size:13px">Status</th>
+                  <th style="padding:12px;color:rgba(255,255,255,0.6);font-size:13px">Opened</th>
+                  <th style="padding:12px;color:rgba(255,255,255,0.6);font-size:13px">Date</th>
+                </tr>
+              </thead>
+              <tbody id="dashRecentLogs">
+                <tr>
+                  <td colspan="4" style="padding:20px;text-align:center;color:rgba(255,255,255,0.4)">Loading activity...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="card tabPanel hidden" id="panelSend">
         <div class="cardTitle">Compose & Send</div>
         <div class="cardHint">
           <strong>Email is mandatory.</strong> Subject / Body / Resume are optional. If you leave
@@ -405,10 +453,13 @@
             <label class="label">Job Description (JD)</label>
             <textarea id="rbJd" placeholder="Paste the JD here. We will tailor your resume to match this."
               style="height: 120px;"></textarea>
-            <div style="margin-top:10px;text-align:right">
-              <button id="rbGenerateBtn" class="btn">🚀 Generate Tailored PDF</button>
+            <div id="rbStatus" class="status empty" style="margin-top:10px;"></div>
+            <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+              <button id="rbGenerateBtn" class="btn">🚀 Download PDF</button>
+              <button id="rbGenerateDocxBtn" class="btn secondary">📝 Download DOCX</button>
             </div>
           </div>
+
           <div id="loginOverlay" class="loginOverlay">
             <div class="loginCard">
               <div class="loginTitle" id="authTitle">System Access</div>
@@ -447,16 +498,21 @@
                   placeholder="linkedin.com/in/..."></div>
             </div>
             <label class="label">Skills (Comma separated)</label>
-            <textarea id="rbSkills" placeholder="React, Node.js, Python..." style="height:60px"></textarea>
+            <textarea id="rbSkills" placeholder="React, Node.js, Python..." style="height:55px"></textarea>
             <label class="label">Experience Summary (Raw text/bullets)</label>
             <textarea id="rbExperience" placeholder="- Senior Dev at X (2020-Present)..."
-              style="height:100px"></textarea>
+              style="height:90px"></textarea>
+            <label class="label">Projects (one per line — name: brief description)</label>
+            <textarea id="rbProjects"
+              placeholder="JobReach: AI-powered job application automation tool using Node.js and Puppeteer&#10;Portfolio Site: Responsive personal portfolio built with React and Tailwind"
+              style="height:80px"></textarea>
             <label class="label">Education</label>
-            <textarea id="rbEducation" placeholder="BS CS, University of Tech (2019)" style="height:60px"></textarea>
+            <textarea id="rbEducation" placeholder="BS CS, University of Tech (2019)" style="height:55px"></textarea>
             <div style="margin-top:10px"><button id="rbSaveProfileBtn" class="btn secondary"> Save Master
                 Profile</button></div>
           </div>
         </div>
+
       </div>
 
       <section class="card tabPanel hidden" id="panelDefaults">

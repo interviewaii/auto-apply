@@ -17,7 +17,13 @@ const applicationLogSchema = new mongoose.Schema({
 
     // Common
     details: { type: String }, // Error message or success note
-    timestamp: { type: Date, default: Date.now }
+    timestamp: { type: Date, default: Date.now },
+
+    // Tracking
+    trackingId: { type: String, unique: true, sparse: true },
+    opened: { type: Boolean, default: false },
+    openedAt: { type: Date },
+    openedIp: { type: String }
 });
 
 // Index for fast retrieval by user

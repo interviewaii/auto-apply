@@ -24,15 +24,21 @@ const bulkPasteWrap = $("#bulkPasteWrap");
 const bulkEmailsTa = $("#bulkEmails");
 
 // Tabs
+const tabDashboard = $("#tabDashboard");
 const tabSend = $("#tabSend");
 const tabAts = $("#tabAts");
+const tabHr = $("#tabHr");
 const tabAuto = $("#tabAuto");
 const tabDefaults = $("#tabDefaults");
+const tabResumeBuilder = $("#tabResumeBuilder");
+
+const panelDashboard = $("#panelDashboard");
 const panelSend = $("#panelSend");
 const panelAts = $("#panelAts");
 const panelHr = $("#panelHr");
 const panelAuto = $("#panelAuto");
 const panelDefaults = $("#panelDefaults");
+const panelResumeBuilder = $("#panelResumeBuilder");
 const panelSide = $("#panelSide");
 
 // HR finder
@@ -292,33 +298,98 @@ function setLoading(isLoading) {
 }
 
 function setTab(which) {
+  const isDash = which === "dashboard";
   const isSend = which === "send";
   const isAts = which === "ats";
   const isHr = which === "hr";
   const isAuto = which === "auto";
   const isDefaults = which === "defaults";
+  const isRb = which === "rb";
 
+  tabDashboard?.classList.toggle("active", isDash);
   tabSend?.classList.toggle("active", isSend);
   tabAts?.classList.toggle("active", isAts);
   tabHr?.classList.toggle("active", isHr);
   tabAuto?.classList.toggle("active", isAuto);
   tabDefaults?.classList.toggle("active", isDefaults);
+  tabResumeBuilder?.classList.toggle("active", isRb);
 
+  panelDashboard?.classList.toggle("hidden", !isDash);
   panelSend?.classList.toggle("hidden", !isSend);
   panelAts?.classList.toggle("hidden", !isAts);
   panelHr?.classList.toggle("hidden", !isHr);
   panelAuto?.classList.toggle("hidden", !isAuto);
   panelDefaults?.classList.toggle("hidden", !isDefaults);
+  if (panelResumeBuilder) panelResumeBuilder.style.display = isRb ? "block" : "none";
 
   // Keep the right-side status visible for send; hide for other tabs to give space.
   panelSide?.classList.toggle("hidden", !isSend);
+
+  if (isDash) loadDashboardStats();
 }
 
+tabDashboard?.addEventListener("click", () => setTab("dashboard"));
 tabSend?.addEventListener("click", () => setTab("send"));
 tabAts?.addEventListener("click", () => setTab("ats"));
 tabHr?.addEventListener("click", () => setTab("hr"));
 tabAuto?.addEventListener("click", () => setTab("auto"));
 tabDefaults?.addEventListener("click", () => setTab("defaults"));
+tabResumeBuilder?.addEventListener("click", () => setTab("rb"));
+
+// -------------------------
+// Dashboard Functionality
+// -------------------------
+
+async function loadDashboardStats() {
+  const dashTotalSent = $("#dashTotalSent");
+  const dashTotalOpened = $("#dashTotalOpened");
+  const dashOpenRate = $("#dashOpenRate");
+  const dashRecentLogs = $("#dashRecentLogs");
+
+  try {
+    const res = await fetch("/api/dashboard/stats");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || "Failed to fetch stats");
+
+    if (dashTotalSent) dashTotalSent.textContent = data.stats.totalSent;
+    if (dashTotalOpened) dashTotalOpened.textContent = data.stats.totalOpened;
+    if (dashOpenRate) dashOpenRate.textContent = data.stats.openedRate + "%";
+
+    if (dashRecentLogs) {
+      if (!data.recentLogs || data.recentLogs.length === 0) {
+        dashRecentLogs.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:rgba(255,255,255,0.4)">No recent activity found.</td></tr>`;
+      } else {
+        dashRecentLogs.innerHTML = data.recentLogs.map(log => {
+          const date = new Date(log.timestamp).toLocaleDateString() + " " + new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const statusClass = log.status === "success" ? "color:#34d399" : "color:#f87171";
+          const openedStatus = log.opened ? `<span style="color:#34d399">✅ Yes (${new Date(log.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span>` : `<span style="color:rgba(255,255,255,0.4)">No</span>`;
+
+          let title = log.recipientEmail || log.jobTitle || "Job Application";
+          if (log.company) title += ` (${log.company})`;
+
+          // Add a manual "Force Open" link for testing on localhost
+          const manualLink = (!log.opened && log.trackingId)
+            ? `<div style="margin-top:4px"><a href="/api/track/${log.trackingId}" target="_blank" style="color:#60a5fa;font-size:11px;text-decoration:none">â†’ Force Open (Test)</a></div>`
+            : "";
+
+          return `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+              <td style="padding:12px;font-size:14px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${title}">${title}</td>
+              <td style="padding:12px;font-size:14px;${statusClass}">${log.status}</td>
+              <td style="padding:12px;font-size:14px">${openedStatus}${manualLink}</td>
+              <td style="padding:12px;font-size:13px;color:rgba(255,255,255,0.5)">${date}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    if (dashRecentLogs) {
+      dashRecentLogs.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:#f87171">Error loading activity: ${err.message}</td></tr>`;
+    }
+  }
+}
 
 initProviderStatus();
 loadSavedCompanyNames();
@@ -1713,105 +1784,30 @@ if (btnAiTailor) {
 }
 
 // --- RESUME BUILDER LOGIC ---
-const tabResumeBuilder = $("#tabResumeBuilder");
-const panelResumeBuilder = $("#panelResumeBuilder");
-const loginOverlay = document.getElementById("loginOverlay");
+// Initial tab
+setTab("dashboard");
 
-// Auth form elements for Resume Builder
-const authTitle = document.getElementById("authTitle");
-const authBtn = document.getElementById("authBtn");
-const authToggleText = document.getElementById("authToggleText");
-const toggleAuthMode = document.getElementById("toggleAuthMode");
-const loginForm = document.getElementById("loginForm");
-const loginUser = document.getElementById("loginUser");
-const loginPass = document.getElementById("loginPass");
+loadDashboardStats();
+loadDefaultsIntoUI();
+loadJobConfiguration();
 
-let isSignupMode = false;
-
-// Toggle Login/Signup
-toggleAuthMode?.addEventListener("click", () => {
-  isSignupMode = !isSignupMode;
-  if (isSignupMode) {
-    authTitle.textContent = "Create Account";
-    authBtn.childNodes[0].textContent = "Sign Up ";
-    authToggleText.textContent = "Already have an account?";
-    toggleAuthMode.textContent = "Login";
-  } else {
-    authTitle.textContent = "System Access";
-    authBtn.childNodes[0].textContent = "Login ";
-    authToggleText.textContent = "Need an account?";
-    toggleAuthMode.textContent = "Sign Up";
-  }
-});
-
-// Handle Login/Register Submission
-loginForm?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const u = loginUser?.value.trim();
-  const p = loginPass?.value.trim();
-  if (!u || !p) return;
-
-  const endpoint = isSignupMode ? "/api/auth/register" : "/api/auth/login";
-
-  if (authBtn) authBtn.disabled = true;
-
+// Check resume builder auth on tab selection
+tabResumeBuilder?.addEventListener("click", async () => {
+  // Check Auth Status immediately
   try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user: u, pass: p }) // Fixed payload keys
-    });
-    const data = await res.json().catch(() => ({}));
-
-    if (res.ok && data.ok) {
+    const res = await fetch("/api/me");
+    if (res.ok) {
+      // User is logged in, hide overlay
       if (loginOverlay) loginOverlay.classList.add("hidden");
-      toast("good", isSignupMode ? "Account Created" : "Welcome Back", `Logged in as ${u}`);
     } else {
-      toast("bad", "Auth Failed", data.error || "Invalid credentials");
-    }
-  } catch (err) {
-    toast("bad", "Error", String(err.message || err));
-  } finally {
-    if (authBtn) authBtn.disabled = false;
-  }
-});
-
-// Tab Switching Logic including new tab
-if (tabResumeBuilder) {
-  tabResumeBuilder.addEventListener("click", async () => {
-    // Hide all
-    [panelSend, panelAts, panelHr, panelAuto, panelDefaults, panelSide].forEach(p => p && p.classList.add("hidden"));
-    if (panelResumeBuilder) panelResumeBuilder.style.display = "block";
-
-    // Deactivate tabs
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    tabResumeBuilder.classList.add("active");
-
-    // Check Auth Status immediately
-    try {
-      const res = await fetch("/api/me");
-      if (res.ok) {
-        // User is logged in, hide overlay
-        if (loginOverlay) loginOverlay.classList.add("hidden");
-      } else {
-        // Not logged in or session expired
-        if (loginOverlay) loginOverlay.classList.remove("hidden");
-      }
-    } catch {
-      // Offline/Error, safe to show login
+      // Not logged in or session expired
       if (loginOverlay) loginOverlay.classList.remove("hidden");
     }
-  });
-
-  // Update existing tab listeners to hide ResumeBuilder panel
-  [tabSend, tabAts, tabHr, tabAuto, tabDefaults].forEach(t => {
-    if (t) {
-      t.addEventListener("click", () => {
-        if (panelResumeBuilder) panelResumeBuilder.style.display = "none";
-      });
-    }
-  });
-}
+  } catch {
+    // Offline/Error, safe to show login
+    if (loginOverlay) loginOverlay.classList.remove("hidden");
+  }
+});
 
 // Generate Resume Button (shared helper)
 async function generateResume(format) {
