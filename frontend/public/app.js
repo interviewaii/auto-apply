@@ -569,8 +569,8 @@ form.addEventListener("submit", async (e) => {
       To: <code>${escapeHtml(data.toEmail)}</code><br/>
       Subject: <code>${escapeHtml(data.subject || "")}</code><br/>
       <div style="margin-top:10px;color:rgba(255,255,255,.75)">
-        Used defaults: subject=${defaults.subject ? "yes" : "no"}, body=${defaults.body ? "yes" : "no"
-      }, resume=${defaults.resume ? "yes" : "no"}
+        Resume attached: <strong>${data.resumeAttached ? "✅ Yes" : "❌ No (Missing from Server)"}</strong><br/>
+        <small style="opacity:0.8">Content: subject=${defaults.subject ? "default" : "custom"}, body=${defaults.body ? "default" : "custom"}${defaults.resume ? ", resume=default" : ""}</small>
       </div>`,
     );
     toast("good", "Email sent", data.toEmail);

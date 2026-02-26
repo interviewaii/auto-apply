@@ -1885,22 +1885,22 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
     // Reuse sender but with our custom text/html when bodyOverride is present.
     const resumeExists = resumePath && fs.existsSync(resumePath);
     const attachments = [];
+    let isResumeAttached = false;
+
     if (req.file?.path) {
+      isResumeAttached = true;
       attachments.push({
         filename: req.file.originalname,
         path: req.file.path,
       });
     } else if (resumeExists) {
+      isResumeAttached = true;
       attachments.push({
         filename: path.basename(resumePath),
         path: resumePath,
       });
     } else {
-      console.warn(`[send] Resume file not found at ${resumePath}`);
-      return res.status(400).json({
-        ok: false,
-        error: "Resume file not found. Please go to the 'Settings' tab and upload your Resume (PDF) first. The local default file is not available on Render."
-      });
+      console.warn(`[send] Resume file not found at ${resumePath} — sending without attachment.`);
     }
 
     const info = bodyOverride
@@ -1942,8 +1942,9 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
       usedDefaults: {
         subject: !subjectOverride,
         body: !bodyOverride,
-        resume: !req.file,
+        resume: !req.file && resumeExists,
       },
+      resumeAttached: isResumeAttached,
     });
   } catch (e) {
     try {
