@@ -1883,20 +1883,31 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
     }
 
     // Reuse sender but with our custom text/html when bodyOverride is present.
+    const resumeExists = resumePath && fs.existsSync(resumePath);
     const attachments = [];
-    if (resumePath && fs.existsSync(resumePath)) {
+    if (req.file?.path) {
       attachments.push({
-        filename: req.file?.originalname || path.basename(resumePath),
+        filename: req.file.originalname,
+        path: req.file.path,
+      });
+    } else if (resumeExists) {
+      attachments.push({
+        filename: path.basename(resumePath),
         path: resumePath,
       });
-    } else if (!req.file) {
-      console.warn(`[send] Resume file not found at ${resumePath} — sending without attachment.`);
+    } else {
+      console.warn(`[send] Resume file not found at ${resumePath}`);
+      return res.status(400).json({
+        ok: false,
+        error: "Resume file not found. Please go to the 'Settings' tab and upload your Resume (PDF) first. The local default file is not available on Render."
+      });
     }
 
     const info = bodyOverride
       ? await transporter.sendMail({
         from: eff.from.name ? `"${eff.from.name}" <${eff.from.email}>` : eff.from.email,
         to: toEmail,
+        toName: toName, // pass for Brevo API fallback
         subject,
         text,
         html,

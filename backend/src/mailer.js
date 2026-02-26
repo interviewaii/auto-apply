@@ -49,22 +49,27 @@ function createNodeMailerTransport({ smtp }) {
 /**
  * Sends email via Brevo HTTP API (Rest API over Port 443)
  */
-async function sendViaBrevoAPI({ apiKey, from, to, subject, text, html, attachments }) {
-  console.log(`[brevo-api] Attempting HTTP fallback for ${to}...`);
+async function sendViaBrevoAPI({ apiKey, from, to, toName, subject, text, html, attachments }) {
+  console.log(`[brevo-api] Attempting HTTP fallback for ${to}... (Sender: ${from.email})`);
 
   const brevoAttachments = (attachments || []).map(a => {
     if (a.path && fs.existsSync(a.path)) {
-      return {
-        content: fs.readFileSync(a.path).toString("base64"),
-        name: a.filename || path.basename(a.path)
-      };
+      try {
+        return {
+          content: fs.readFileSync(a.path).toString("base64"),
+          name: a.filename || path.basename(a.path)
+        };
+      } catch (e) {
+        console.error(`[brevo-api] Failed to read attachment ${a.path}:`, e);
+        return null;
+      }
     }
     return null;
   }).filter(Boolean);
 
   const payload = {
-    sender: { name: from.name || "", email: from.email },
-    to: [{ email: to }],
+    sender: { name: from.name || "Hiring Team", email: from.email },
+    to: [{ email: to, name: toName || "" }],
     subject: subject,
     htmlContent: html,
     textContent: text,
@@ -86,8 +91,10 @@ async function sendViaBrevoAPI({ apiKey, from, to, subject, text, html, attachme
 
   const result = await response.json();
   if (!response.ok) {
+    console.error("[brevo-api] HTTP Fallback Failed:", result);
     throw new Error(`Brevo API Error: ${result.message || response.statusText}`);
   }
+  console.log(`[brevo-api] HTTP Fallback Success! Message IDs: ${JSON.stringify(result.messageIds || result)}`);
   return result;
 }
 
@@ -105,13 +112,15 @@ async function createTransporter({ smtp, from }) {
         return await primary.sendMail(mailOptions);
       } catch (err) {
         const isBrevo = smtp.host && smtp.host.includes("brevo.com");
-        const isTimeout = isReachabilityError(err) || err.message.toLowerCase().includes("timeout");
+        const errStr = String(err?.message || "").toLowerCase();
+        const isNetworkErr = isReachabilityError(err) || errStr.includes("timeout") || errStr.includes("connection");
 
-        if (isBrevo && isTimeout) {
+        if (isBrevo && isNetworkErr) {
           return await sendViaBrevoAPI({
             apiKey: smtp.pass,
             from,
             to: mailOptions.to,
+            toName: mailOptions.toName, // Custom field passed from sendApplicationEmail
             subject: mailOptions.subject,
             text: mailOptions.text,
             html: mailOptions.html,
