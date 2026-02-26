@@ -31,7 +31,7 @@ function formatEndpoint(smtp) {
   return `${smtp.host}:${smtp.port} (secure=${smtp.secure ? "true" : "false"})`;
 }
 
-function createNodeMailerTransport({ smtp, from }) {
+function createNodeMailerTransport({ smtp }) {
   return nodemailer.createTransport({
     host: smtp.host,
     port: smtp.port,
@@ -40,62 +40,100 @@ function createNodeMailerTransport({ smtp, from }) {
       user: smtp.user,
       pass: smtp.pass,
     },
-    // Add timeouts to handle blocked ports faster
-    connectionTimeout: 10000, // 10 seconds
+    connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
   });
+}
+
+/**
+ * Sends email via Brevo HTTP API (Rest API over Port 443)
+ */
+async function sendViaBrevoAPI({ apiKey, from, to, subject, text, html, attachments }) {
+  console.log(`[brevo-api] Attempting HTTP fallback for ${to}...`);
+
+  const brevoAttachments = (attachments || []).map(a => {
+    if (a.path && fs.existsSync(a.path)) {
+      return {
+        content: fs.readFileSync(a.path).toString("base64"),
+        name: a.filename || path.basename(a.path)
+      };
+    }
+    return null;
+  }).filter(Boolean);
+
+  const payload = {
+    sender: { name: from.name || "", email: from.email },
+    to: [{ email: to }],
+    subject: subject,
+    htmlContent: html,
+    textContent: text,
+  };
+
+  if (brevoAttachments.length) {
+    payload.attachment = brevoAttachments;
+  }
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(`Brevo API Error: ${result.message || response.statusText}`);
+  }
+  return result;
 }
 
 async function createTransporter({ smtp, from }) {
   assertSmtpConfig(smtp);
   if (!from?.email) throw new Error("Missing FROM_EMAIL (or SMTP_USER) in .env");
 
-  const primary = createNodeMailerTransport({ smtp, from });
-  try {
-    await primary.verify();
-    return primary;
-  } catch (err) {
-    // Common case: some networks/ISPs block outbound SMTP submission ports.
-    // If user configured 587/STARTTLS, retry once on 465/SSL which often works.
-    const canTry465 =
-      Number(smtp.port) === 587 && smtp.secure === false && isReachabilityError(err);
+  const primary = createNodeMailerTransport({ smtp });
 
-    if (canTry465) {
-      const fallbackSmtp = { ...smtp, port: 465, secure: true };
-      const fallback = createNodeMailerTransport({ smtp: fallbackSmtp, from });
+  // Return a wrapper that has sendMail and handle fallback
+  return {
+    sendMail: async (mailOptions) => {
       try {
-        await fallback.verify();
-        console.warn(
-          `[smtp] Primary ${formatEndpoint(smtp)} failed (${err?.code || "UNKNOWN"}). Using fallback ${formatEndpoint(
-            fallbackSmtp,
-          )}.`,
-        );
-        return fallback;
-      } catch (err2) {
-        throw new Error(
-          `SMTP connection failed.\n- Primary: ${formatEndpoint(smtp)} -> ${err?.code || "UNKNOWN"}: ${err?.message || err
-          }\n- Fallback: ${formatEndpoint(fallbackSmtp)} -> ${err2?.code || "UNKNOWN"}: ${err2?.message || err2
-          }\n\nThis is a network reachability problem (not an auth/password issue). If you're on VPN/corporate Wi‑Fi, or your ISP blocks SMTP ports, switch networks or use an email provider API (SendGrid/Mailgun/Resend) instead of direct SMTP.`,
-          { cause: err2 },
-        );
+        // Try original SMTP
+        return await primary.sendMail(mailOptions);
+      } catch (err) {
+        const isBrevo = smtp.host && smtp.host.includes("brevo.com");
+        const isTimeout = isReachabilityError(err) || err.message.toLowerCase().includes("timeout");
+
+        if (isBrevo && isTimeout) {
+          return await sendViaBrevoAPI({
+            apiKey: smtp.pass,
+            from,
+            to: mailOptions.to,
+            subject: mailOptions.subject,
+            text: mailOptions.text,
+            html: mailOptions.html,
+            attachments: mailOptions.attachments
+          });
+        }
+        throw err;
+      }
+    },
+    verify: async () => {
+      // For verify, if it's Brevo we might just return true since the API is always "up"
+      try {
+        return await primary.verify();
+      } catch (err) {
+        if (smtp.host && smtp.host.includes("brevo.com") && isReachabilityError(err)) {
+          console.warn("[smtp] Brevo SMTP port blocked, but will use HTTP API fallback.");
+          return true;
+        }
+        throw err;
       }
     }
-
-    if (String(err?.code || "").toUpperCase() === "ENETUNREACH") {
-      throw new Error(
-        `SMTP connection failed: ${formatEndpoint(smtp)} -> ENETUNREACH: ${err?.message || err
-        }\n\nYour network cannot reach the SMTP server on that port. Try:\n- Set SMTP_PORT=465 and SMTP_SECURE=true (SSL)\n- Disable VPN / try a different Wi‑Fi/network\n- If on a hosted environment, use an email API provider (HTTP) instead of SMTP`,
-        { cause: err },
-      );
-    }
-
-    throw new Error(
-      `SMTP connection failed: ${formatEndpoint(smtp)} -> ${err?.code || "UNKNOWN"}: ${err?.message || err
-      }`,
-      { cause: err },
-    );
-  }
+  };
 }
 
 async function sendApplicationEmail({
@@ -128,6 +166,7 @@ async function sendApplicationEmail({
   return await transporter.sendMail({
     from: from.name ? `"${from.name}" <${from.email}>` : from.email,
     to: toEmail,
+    toName,
     subject,
     text,
     html,
