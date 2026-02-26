@@ -140,26 +140,12 @@ class NaukriScraper {
         const jobCardSelectors = [
             ".cust-job-tuple",
             ".srp-jobtuple-wrapper",
-            "[class*='srp-jobtuple']",
-            "[class*='job-tuple']",
-            "[class*='jobTuple']",
             "[data-job-id]",
             ".list article",
             ".jobTuple"
         ];
 
-        const title = await this.page.title();
-        console.log(`[Naukri] Current page title: "${title}"`);
-
-        // Check for common blocking indicators
-        const content = await this.page.content();
-        if (content.includes("captcha") || content.includes("robot") || content.includes("security check")) {
-            console.warn("[Naukri] Detection triggered! Found blocking keywords in HTML.");
-        }
-
-        await this.page.waitForSelector(jobCardSelectors.join(","), { timeout: 15000 }).catch(() => {
-            console.log("[Naukri] Timeout waiting for job card selectors.");
-        });
+        await this.page.waitForSelector(jobCardSelectors.join(","), { timeout: 10000 }).catch(() => null);
 
         const jobs = await this.page.evaluate((selectors) => {
             // Helper to try multiple selectors on an element
@@ -278,7 +264,7 @@ class NaukriScraper {
                 } catch (e) {
                     console.error("Error extracting job card:", e.message);
                 }
-            });
+            }
 
             return extracted;
         }, jobCardSelectors);
@@ -302,7 +288,7 @@ class NaukriScraper {
 
         console.log(`[Naukri] Navigating to: ${searchUrl} `);
 
-        await this.page.goto(searchUrl, { waitUntil: "networkidle2", timeout: 30000 });
+        await this.page.goto(searchUrl, { waitUntil: "networkidle2", timeout: 60000 });
 
         // Wait a bit for dynamic content
         await this.sleep(2000);
