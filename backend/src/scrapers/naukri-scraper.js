@@ -264,7 +264,7 @@ class NaukriScraper {
                 } catch (e) {
                     console.error("Error extracting job card:", e.message);
                 }
-            }
+            });
 
             return extracted;
         }, jobCardSelectors);
