@@ -2,8 +2,10 @@ const express = require("express");
 const multer = require("multer");
 const os = require("os");
 const path = require("path");
-// Ensure Puppeteer finds Chrome in the project folder (for Render)
-process.env.PUPPETEER_CACHE_DIR = path.join(process.cwd(), "chrome-cache");
+// Use a specific cache directory for Puppeteer on Render to ensure Chrome is found
+if (process.env.RENDER) {
+  process.env.PUPPETEER_CACHE_DIR = path.join(process.cwd(), "chrome-cache");
+}
 const fs = require("fs");
 const { spawnSync } = require("child_process");
 const XLSX = require("xlsx");
