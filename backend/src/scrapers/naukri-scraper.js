@@ -8,7 +8,8 @@ class NaukriScraper {
     constructor(options = {}) {
         this.browser = null;
         this.page = null;
-        this.headless = options.headless !== undefined ? options.headless : false;
+        const isLinux = process.platform === "linux" || !!process.env.RENDER;
+        this.headless = (options.headless || isLinux) ? "new" : false;
         this.options = options;
         this.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     }
@@ -33,10 +34,17 @@ class NaukriScraper {
 
         console.log(`[Naukri] Initializing browser for user: ${userId}`);
 
+        const fs = require('fs');
+        let execPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        if (execPath && !fs.existsSync(execPath)) {
+            console.warn(`[Naukri] Custom Chrome path not found: ${execPath}. Using bundled Chrome.`);
+            execPath = undefined;
+        }
+
         this.browser = await puppeteer.launch({
             headless: this.headless ? "new" : false,
             userDataDir: userDataDir,
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+            executablePath: execPath,
             args: [
                 "--no-sandbox",
                 "--disable-setuid-sandbox",

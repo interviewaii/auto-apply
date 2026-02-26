@@ -7,7 +7,8 @@ class IndeedScraper {
     constructor(options = {}) {
         this.browser = null;
         this.page = null;
-        this.headless = options.headless !== undefined ? options.headless : false;
+        const isLinux = process.platform === "linux" || !!process.env.RENDER;
+        this.headless = (options.headless || isLinux) ? "new" : false;
         this.options = options;
         this.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     }
