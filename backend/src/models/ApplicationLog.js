@@ -23,7 +23,8 @@ const applicationLogSchema = new mongoose.Schema({
     trackingId: { type: String, unique: true, sparse: true },
     opened: { type: Boolean, default: false },
     openedAt: { type: Date },
-    openedIp: { type: String }
+    openedIp: { type: String },
+    openedUA: { type: String }
 });
 
 // Index for fast retrieval by user

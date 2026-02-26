@@ -368,7 +368,8 @@ async function loadDashboardStats() {
           if (log.company) title += ` (${log.company})`;
 
           // Add a manual "Force Open" link for testing on localhost
-          const manualLink = (!log.opened && log.trackingId)
+          const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+          const manualLink = (!log.opened && log.trackingId && isLocal)
             ? `<div style="margin-top:4px"><a href="/api/track/${log.trackingId}" target="_blank" style="color:#60a5fa;font-size:11px;text-decoration:none">â†’ Force Open (Test)</a></div>`
             : "";
 

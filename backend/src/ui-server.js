@@ -136,6 +136,7 @@ async function requireAuth(req, res, next) {
 app.get("/api/track/:trackingId", async (req, res) => {
   const { trackingId } = req.params;
   const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  const ua = req.headers["user-agent"] || "";
 
   try {
     console.log(`[Tracking] Request for ID: "${trackingId}" from IP: ${ip}`);
@@ -155,6 +156,7 @@ app.get("/api/track/:trackingId", async (req, res) => {
         opened: true,
         openedAt: new Date(),
         openedIp: ip,
+        openedUA: ua,
       },
       {
         new: true, // Standard Mongoose option
