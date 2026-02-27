@@ -139,6 +139,12 @@ app.get("/api/track/:trackingId", async (req, res) => {
   const ua = req.headers["user-agent"] || "";
 
   try {
+    const isBot = /bot|scanner|preview|trendmicro|google|bing|yahoo|crawler/i.test(ua);
+    if (isBot) {
+      console.log(`[Tracking] Ignoring bot/scanner request for ID: "${trackingId}" from UA: ${ua}`);
+      return res.status(204).end();
+    }
+
     console.log(`[Tracking] Request for ID: "${trackingId}" from IP: ${ip}`);
 
     // Find the log entry first to see if it even exists (for better logging)
@@ -159,8 +165,7 @@ app.get("/api/track/:trackingId", async (req, res) => {
         openedUA: ua,
       },
       {
-        new: true, // Standard Mongoose option
-        returnDocument: 'after', // Ensure modern driver compatibility
+        returnDocument: 'after',
         lean: true
       }
     );
@@ -2036,7 +2041,10 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
         path: resumePath,
       });
     } else {
-      console.warn(`[send] Resume file not found at ${resumePath} — sending without attachment.`);
+    } else {
+      console.warn(`[send] Resume file not found at ${resumePath}.`);
+      console.warn(`[send] Please ensure you have a resume file at "assets/Shubham_Pawar_3Yr.pdf" or your configured RESUME_PATH.`);
+      console.warn(`[send] Proceeding without attachment...`);
     }
 
     const trackingId = crypto.randomBytes(16).toString("hex");

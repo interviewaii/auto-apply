@@ -69,7 +69,7 @@ async function sendViaBrevoAPI({ apiKey, from, to, toName, subject, text, html, 
 
   const payload = {
     sender: { name: from.name || "Hiring Team", email: from.email },
-    to: [{ email: to, name: toName || "" }],
+    to: [{ email: to, name: toName || "Candidate" }],
     subject: subject,
     htmlContent: html,
     textContent: text,
@@ -126,13 +126,17 @@ async function createTransporter({ smtp, from }) {
             apiKey: smtp.pass,
             from,
             to: mailOptions.to,
-            toName: mailOptions.toName, // Custom field passed from sendApplicationEmail
+            toName: mailOptions.toName || "Candidate", // Ensure name is passed
             subject: mailOptions.subject,
             text: mailOptions.text,
             html: mailOptions.html,
             attachments: mailOptions.attachments,
             mailOptions: mailOptions // Pass original options for trackingId
           });
+        }
+
+        if (errStr.includes("timeout") || errStr.includes("econnrefused")) {
+          console.error(`[smtp] Connection failed to ${smtp.host}:${smtp.port}. Note: Render and other cloud providers often block SMTP ports (25, 465, 587). Consider using an HTTP API like Brevo.`);
         }
         throw err;
       }
