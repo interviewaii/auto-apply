@@ -139,9 +139,16 @@ app.get("/api/track/:trackingId", async (req, res) => {
   const ua = req.headers["user-agent"] || "";
 
   try {
-    const isBot = /bot|scanner|preview|trendmicro|google|bing|yahoo|crawler/i.test(ua);
-    if (isBot) {
-      console.log(`[Tracking] Ignoring bot/scanner request for ID: "${trackingId}" from UA: ${ua}`);
+    const botRegex = /bot|scanner|preview|trendmicro|google|bing|yahoo|crawler|curl|wget|spider|slack|whatsapp|facebook|twitter|linkedin|office|outlook|microsoft|proofpoint|barracuda|symantec|fireeye|headless|cypress|puppeteer|phantomjs/i;
+    const isBotUA = botRegex.test(ua);
+
+    // Check if opened too fast after being sent (likely an automated scanner)
+    // existing.timestamp is the creation time of the log entry
+    const timeSinceSent = existing ? (new Date() - new Date(existing.timestamp)) : 99999;
+    const isTooFast = timeSinceSent < 5000; // 5 seconds
+
+    if (isBotUA || isTooFast) {
+      console.log(`[Tracking] Ignoring automated request for ID: "${trackingId}" (BotUA: ${isBotUA}, TooFast: ${isTooFast}, UA: ${ua})`);
       return res.status(204).end();
     }
 

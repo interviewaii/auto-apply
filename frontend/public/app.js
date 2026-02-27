@@ -376,7 +376,8 @@ async function loadDashboardStats() {
           const openedUA = log.openedUA || "";
           let botTag = "";
           if (log.opened) {
-            if (openedUA.includes("GoogleImageProxy") || openedUA.includes("Googlebot") || openedUA.includes("bingbot") || openedUA.includes("Baiduspider")) {
+            const botRegex = /bot|scanner|preview|trendmicro|google|bing|yahoo|crawler|curl|wget|spider|slack|whatsapp|facebook|twitter|linkedin|office|outlook|microsoft|proofpoint|barracuda|symantec|fireeye|headless|cypress|puppeteer|phantomjs/i;
+            if (botRegex.test(openedUA)) {
               botTag = `<div style="font-size:10px;color:#facc15;margin-top:2px;opacity:0.8">⚠ Detected: Bot/Security Scanner</div>`;
             } else if (openedUA !== "") {
               botTag = `<div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px" title="${escapeHtml(openedUA)}">👤 Human/Client</div>`;
