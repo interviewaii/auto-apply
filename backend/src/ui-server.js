@@ -2041,7 +2041,6 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
         path: resumePath,
       });
     } else {
-    } else {
       console.warn(`[send] Resume file not found at ${resumePath}.`);
       console.warn(`[send] Please ensure you have a resume file at "assets/Shubham_Pawar_3Yr.pdf" or your configured RESUME_PATH.`);
       console.warn(`[send] Proceeding without attachment...`);
