@@ -139,11 +139,13 @@ app.get("/api/track/:trackingId", async (req, res) => {
   const ua = req.headers["user-agent"] || "";
 
   try {
+    // Find the log entry first so we can check the timestamp for the timing filter
+    const existing = await ApplicationLog.findOne({ trackingId });
+
     const botRegex = /bot|scanner|preview|trendmicro|google|bing|yahoo|crawler|curl|wget|spider|slack|whatsapp|facebook|twitter|linkedin|office|outlook|microsoft|proofpoint|barracuda|symantec|fireeye|headless|cypress|puppeteer|phantomjs/i;
     const isBotUA = botRegex.test(ua);
 
     // Check if opened too fast after being sent (likely an automated scanner)
-    // existing.timestamp is the creation time of the log entry
     const timeSinceSent = existing ? (new Date() - new Date(existing.timestamp)) : 99999;
     const isTooFast = timeSinceSent < 5000; // 5 seconds
 
@@ -154,8 +156,6 @@ app.get("/api/track/:trackingId", async (req, res) => {
 
     console.log(`[Tracking] Request for ID: "${trackingId}" from IP: ${ip}`);
 
-    // Find the log entry first to see if it even exists (for better logging)
-    const existing = await ApplicationLog.findOne({ trackingId });
     if (!existing) {
       console.log(`[Tracking] ID "${trackingId}" not found in database.`);
     } else if (existing.opened) {
