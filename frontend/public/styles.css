@@ -254,6 +254,15 @@ body {
   margin-bottom: 10px;
 }
 
+/* Dashboard Table Sticky Header */
+#dashRecentLogsWrap thead th {
+  position: sticky;
+  top: 0;
+  background: #0d0d0d;
+  /* Matching card background */
+  z-index: 10;
+}
+
 .cardHint {
   font-size: 13px;
   color: var(--muted2);

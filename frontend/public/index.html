@@ -69,9 +69,15 @@
           </div>
         </div>
 
+        <div class="card" style="margin-bottom:20px;display:none" id="dashDailySummaryWrap">
+          <div class="cardTitle">Daily Email Summary (Last 14 Days)</div>
+          <div id="dashDailyStats" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"></div>
+        </div>
+
         <div class="card">
           <div class="cardTitle">Recent Activity</div>
-          <div style="overflow-x:auto">
+          <div id="dashRecentLogsWrap"
+            style="overflow-x:auto; max-height: 500px; overflow-y: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05)">
             <table style="width:100%;border-collapse:collapse;margin-top:10px">
               <thead>
                 <tr style="text-align:left;border-bottom:1px solid rgba(255,255,255,0.1)">

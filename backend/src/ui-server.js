@@ -215,10 +215,23 @@ app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
     const totalSent = await ApplicationLog.countDocuments({ userId: req.session.userId, type: "email" });
     const totalOpened = await ApplicationLog.countDocuments({ userId: req.session.userId, type: "email", opened: true });
 
-    // Get recent applications
+    // Get recent applications (increased limit for scrolling)
     const recentLogs = await ApplicationLog.find({ userId: req.session.userId })
       .sort({ timestamp: -1 })
-      .limit(10);
+      .limit(100);
+
+    // Aggregate emails by day for the last 14 days
+    const dailyStats = await ApplicationLog.aggregate([
+      { $match: { userId: req.session.userId, type: "email" } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: -1 } },
+      { $limit: 14 }
+    ]);
 
     res.json({
       ok: true,
@@ -227,7 +240,8 @@ app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
         totalOpened,
         openedRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
       },
-      recentLogs
+      recentLogs,
+      dailyStats
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

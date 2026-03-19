@@ -351,6 +351,8 @@ async function loadDashboardStats() {
   const dashTotalOpened = $("#dashTotalOpened");
   const dashOpenRate = $("#dashOpenRate");
   const dashRecentLogs = $("#dashRecentLogs");
+  const dashDailyStats = $("#dashDailyStats");
+  const dashDailySummaryWrap = $("#dashDailySummaryWrap");
 
   try {
     const res = await fetch("/api/dashboard/stats");
@@ -360,6 +362,23 @@ async function loadDashboardStats() {
     if (dashTotalSent) dashTotalSent.textContent = data.stats.totalSent;
     if (dashTotalOpened) dashTotalOpened.textContent = data.stats.totalOpened;
     if (dashOpenRate) dashOpenRate.textContent = data.stats.openedRate + "%";
+
+    // Build Daily Stats Summary
+    if (dashDailyStats && data.dailyStats && data.dailyStats.length > 0) {
+      if (dashDailySummaryWrap) dashDailySummaryWrap.style.display = "block";
+      dashDailyStats.innerHTML = data.dailyStats.map(stat => {
+        const d = new Date(stat._id);
+        const dateStr = d.toLocaleDateString("en-IN", { day: '2-digit', month: 'short' });
+        return `
+          <div style="background:rgba(255,255,255,0.05);padding:10px 15px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);min-width:110px;text-align:center">
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">${dateStr}</div>
+            <div style="font-size:18px;font-weight:800;color:#60a5fa">${stat.count} <span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.4)">emails</span></div>
+          </div>
+        `;
+      }).join("");
+    } else if (dashDailySummaryWrap) {
+      dashDailySummaryWrap.style.display = "none";
+    }
 
     if (dashRecentLogs) {
       if (!data.recentLogs || data.recentLogs.length === 0) {
@@ -376,7 +395,7 @@ async function loadDashboardStats() {
           // Add a manual "Force Open" link for testing on localhost
           const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
           const manualLink = (!log.opened && log.trackingId && isLocal)
-            ? `<div style="margin-top:4px"><a href="/api/track/${log.trackingId}" target="_blank" style="color:#60a5fa;font-size:11px;text-decoration:none">â†’ Force Open (Test)</a></div>`
+            ? `<div style="margin-top:4px"><a href="/api/track/${log.trackingId}" target="_blank" style="color:#60a5fa;font-size:11px;text-decoration:none">→ Force Open (Test)</a></div>`
             : "";
 
           const openedUA = log.openedUA || "";
