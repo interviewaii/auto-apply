@@ -31,9 +31,14 @@ async function fetchAndExtract(url, timeoutMs = 6000) {
         // Collect mailto links first (most reliable)
         const mailtoEmails = [];
         $('a[href^="mailto:"]').each((i, el) => {
-            const href = $(el).attr('href') || '';
+            let href = $(el).attr('href') || '';
+            try {
+                // Handle URI encoding like %20 in emails found in logs
+                href = decodeURIComponent(href);
+            } catch (e) { }
+
             const email = href.replace('mailto:', '').split('?')[0].trim().toLowerCase();
-            if (email) mailtoEmails.push(email);
+            if (email && email.includes('@')) mailtoEmails.push(email);
         });
 
         // Remove script/style noise then read all visible text
