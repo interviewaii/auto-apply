@@ -1,5 +1,5 @@
 const puppeteer = require("puppeteer");
-
+const EmailExtractor = require("../utils/email-extractor");
 /**
  * Naukri.com Job Scraper
  * Scrapes jobs from Naukri.com with filters for remote work and latest postings
@@ -327,13 +327,21 @@ class NaukriScraper {
 
         console.log(`[Naukri] Total jobs scraped: ${allJobs.length} `);
 
-        // Add platform identifier
-        const jobsWithPlatform = allJobs.map(job => ({
-            ...job,
-            platform: "naukri",
-        }));
+        // Add platform identifier & extracted emails
+        const jobsWithPlatform = allJobs.map(job => {
+            const descriptionForRegex = job.description || "";
+            return {
+                ...job,
+                platform: "naukri",
+                extractedEmails: EmailExtractor.extractEmailsFromText(descriptionForRegex)
+            };
+        });
 
         // Apply strict client-side filtering
+        if (this._skipFilter) {
+            console.log(`[Naukri] skipFilter=true, returning all ${jobsWithPlatform.length} jobs without keyword filter.`);
+            return jobsWithPlatform;
+        }
         const filteredJobs = this.filterStrictly(jobsWithPlatform, { keywords, postedWithin });
         console.log(`[Naukri] Jobs after strict filtering: ${filteredJobs.length} (out of ${allJobs.length})`);
 

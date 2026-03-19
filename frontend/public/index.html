@@ -36,6 +36,7 @@
     <div class="tabs">
       <button class="tab active" id="tabDashboard" type="button">📊 Dashboard</button>
       <button class="tab" id="tabSend" type="button">Direct Send</button>
+      <button class="tab" id="tabBulk" type="button">Bulk Send</button>
       <button class="tab" id="tabAts" type="button">ATS Optimizer</button>
       <button class="tab" id="tabHr" type="button">HR Finder</button>
       <button class="tab" id="tabAuto" type="button">Auto Apply</button>
@@ -157,6 +158,73 @@
         </form>
       </section>
 
+      <!-- BULK SEND PANEL -->
+      <section class="card tabPanel hidden" id="panelBulk">
+        <div class="cardTitle">Bulk Send (Excel / Paste)</div>
+        <div class="cardHint">
+          Send applications to multiple recipients at once. Upload an Excel file or paste a list of emails.
+        </div>
+
+        <div
+          style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:10px;padding:16px;margin-bottom:20px;font-size:14px">
+          <div style="font-weight:700;color:#60a5fa;margin-bottom:10px">📋 How to use Bulk Send:</div>
+          <ol style="margin:0;padding-left:18px;line-height:1.8;color:rgba(255,255,255,0.9)">
+            <li><strong>Download the template</strong> below → open in Excel</li>
+            <li>Fill columns: <code>email</code>, <code>recipient name</code>, <code>subject</code> (optional),
+              <code>body</code> (optional)
+            </li>
+            <li>Save as <strong>.xlsx</strong> and upload it here</li>
+            <li>Optionally attach a <strong>PDF resume</strong> (uses your default if not uploaded)</li>
+            <li>Click <strong>"Send Bulk Emails"</strong> — emails send one by one automatically</li>
+          </ol>
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <a class="dl" href="/api/template.xlsx" style="font-size:13px;padding:8px 16px">⬇️ Download Template
+              (.xlsx)</a>
+            <a class="dl" href="/api/user/sent.xlsx"
+              style="font-size:13px;padding:8px 16px;background:rgba(52,211,153,0.15);border-color:rgba(52,211,153,0.4);color:#34d399">📊
+              Download My Sent Log</a>
+          </div>
+        </div>
+
+        <div class="row" style="gap:15px; display: flex; flex-direction: column;">
+          <div>
+            <label class="label" for="bulkMode">Bulk mode</label>
+            <select id="bulkMode" style="width: 100%; max-width: 300px;">
+              <option value="excel" selected>📂 Excel sheet (.xlsx)</option>
+              <option value="paste">📋 Paste emails (comma/newline)</option>
+            </select>
+          </div>
+
+          <div id="bulkExcelWrap">
+            <div class="micro" style="margin-bottom:8px">Upload the filled-in <strong>.xlsx</strong> file. Each row =
+              one email. Subject & body columns are optional overrides.</div>
+            <label class="label" for="excel">Excel file (.xlsx) <span class="req">*</span></label>
+            <input id="excel" type="file" accept=".xlsx" />
+          </div>
+
+          <div id="bulkPasteWrap" class="hidden">
+            <div class="micro" style="margin-bottom:8px">Paste email addresses separated by commas or newlines. Your
+              default subject & body will be used for all.</div>
+            <label class="label" for="bulkEmails">Emails <span class="req">*</span></label>
+            <textarea id="bulkEmails" rows="8"
+              placeholder="hr@company.com&#10;recruiter@startup.com&#10;talent@enterprise.io"></textarea>
+          </div>
+
+          <div>
+            <label class="label" for="bulkResume">Resume for all rows <span
+                style="color:rgba(255,255,255,0.4)">(optional PDF — uses your saved default)</span></label>
+            <input id="bulkResume" type="file" accept=".pdf" />
+          </div>
+
+          <button id="bulkSendBtn" class="btn" type="button" style="width:100%; margin-top: 10px;">🚀 Send Bulk
+            Emails</button>
+          <div class="micro" style="margin-top: 8px;">
+            Tip: In <strong>Excel mode</strong>, each row can have its own subject & body. Leave them blank to use your
+            saved defaults.
+          </div>
+        </div>
+      </section>
+
       <section class="tabPanel hidden" id="panelAts">
         <div class="hrTwoCol">
           <section class="card">
@@ -232,6 +300,61 @@
             <div id="hrResults" class="status empty">Search results will appear here.</div>
           </section>
         </div>
+
+        <div class="divider"></div>
+        <section class="card" id="hrJobScraperCard">
+          <div class="cardTitle">Job Board Email Extractor</div>
+          <div class="cardHint">Search job boards to find and extract emails directly from job postings (does not add to
+            auto-apply queue).</div>
+
+          <div class="row twoCol">
+            <div>
+              <label class="label">Platform</label>
+              <select id="hrJobPlatform">
+                <option value="naukri">Naukri.com</option>
+                <option value="glassdoor">Glassdoor</option>
+                <option value="indeed">Indeed</option>
+                <option value="linkedin" selected>LinkedIn</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Keywords <span class="req">*</span></label>
+              <input id="hrJobKeywords" type="text" placeholder="e.g. MERN Developer" />
+            </div>
+          </div>
+
+          <div class="row twoCol">
+            <div>
+              <label class="label">Location</label>
+              <input id="hrJobLocation" type="text" placeholder="e.g. Remote, Bangalore" />
+            </div>
+            <div>
+              <label class="label">Max Pages</label>
+              <input id="hrJobPages" type="number" value="1" min="1" max="5" />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="hrScrapeEmailsBtn" class="btn" type="button">🔍 Extract Emails</button>
+            <button id="hrExportScrapedBtn" class="btn secondary hidden" type="button"
+              style="border-color:#10b981; color:#10b981">📥 Export Results to Excel</button>
+          </div>
+          <div id="hrScrapeStatus" class="status empty">Set your criteria and click Extract to begin.</div>
+
+          <div id="hrScrapeResultsTableWrap" style="overflow-x:auto;margin-top:15px;display:none;">
+            <table style="width:100%;border-collapse:collapse;min-width:600px;background:white">
+              <thead>
+                <tr style="background:#f5f5f5;border-bottom:2px solid #ddd">
+                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Company</th>
+                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Job Title</th>
+                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Extracted Emails</th>
+                  <th style="padding:10px;text-align:left;font-size:12px;font-weight:600">Link</th>
+                </tr>
+              </thead>
+              <tbody id="hrScrapeResultsBody"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
 
       <section class="tabPanel hidden" id="panelAuto">
@@ -549,13 +672,17 @@
 
         <div class="row twoCol">
           <div>
+            <label class="label" for="defJobTitle">Job Title / Designation</label>
+            <input id="defJobTitle" type="text" placeholder="e.g. MERN Stack Developer" />
+          </div>
+          <div>
             <label class="label" for="defSmtpUser">SMTP user / email</label>
             <input id="defSmtpUser" type="text" placeholder="you@gmail.com" />
           </div>
-          <div>
-            <label class="label" for="defSmtpPass">SMTP app password</label>
-            <input id="defSmtpPass" type="password" placeholder="(leave blank to keep saved password)" />
-          </div>
+        </div>
+        <div>
+          <label class="label" for="defSmtpPass">SMTP app password</label>
+          <input id="defSmtpPass" type="password" placeholder="(leave blank to keep saved password)" />
         </div>
 
         <div class="row twoCol">
@@ -590,7 +717,6 @@
             <input id="defExpectedCtc" type="text" placeholder="e.g. 12" />
           </div>
         </div>
-
         <div class="row twoCol">
           <div>
             <label class="label" for="defCurrentLocation">Current Location</label>
@@ -612,7 +738,7 @@
 
         <div class="cardTitle">Default Resume</div>
         <div class="cardHint">
-          Upload a PDF resume once. This will be used when you donâ€™t upload a resume in Send/Bulk.
+          Upload a PDF resume once. This will be used when you don’t upload a resume in Send/Bulk.
         </div>
         <div class="row">
           <label class="label" for="defResume">Resume (PDF)</label>
@@ -633,50 +759,14 @@
 
         <div class="divider"></div>
 
-        <div class="cardTitle">Bulk Send (Excel)</div>
-        <div class="cardHint">
-          Send to many recipients either by uploading an <strong>.xlsx</strong> file or by pasting a
-          comma/newline-separated email list.
-        </div>
-
-        <div class="row" style="gap:10px">
-          <a class="dl" href="/sent.xlsx">Download sent log (Excel)</a>
-
-          <label class="label" for="bulkMode">Bulk mode</label>
-          <select id="bulkMode">
-            <option value="excel" selected>Excel sheet (.xlsx)</option>
-            <option value="paste">Direct copy-paste (comma/newline)</option>
-          </select>
-
-          <div id="bulkExcelWrap">
-            <label class="label" for="excel">Excel file (.xlsx) <span class="req">*</span></label>
-            <input id="excel" type="file" accept=".xlsx" />
-          </div>
-
-          <div id="bulkPasteWrap" class="hidden">
-            <label class="label" for="bulkEmails">Emails (comma/newline separated) <span class="req">*</span></label>
-            <textarea id="bulkEmails" rows="6"
-              placeholder="admin@totalsoft.co.uk, abhinav.jain+hiring@cloudambassadors.com, archit.rastogi@arrise.com"></textarea>
-            <div class="micro">Tip: you can paste one per line or separated by commas.</div>
-          </div>
-
-          <label class="label" for="bulkResume">Resume for all rows (optional PDF)</label>
-          <input id="bulkResume" type="file" accept=".pdf" />
-
-          <button id="bulkSendBtn" class="btn" type="button">Send Bulk Emails</button>
-          <div class="micro">
-            Defaults are used for subject/body. In Excel mode, each row can override <strong>subject/body</strong>.
-          </div>
-        </div>
+        <div class="cardTitle">Default Info</div>
+        <ul class="list">
+          <li id="sideDefSubject"><strong>Subject</strong>: (Loading...)</li>
+          <li id="sideDefBody"><strong>Body</strong>: (Loading...)</li>
+          <li id="sideDefResume"><strong>Resume</strong>: (Loading...)</li>
+        </ul>
 
         <div class="divider"></div>
-
-        <div class="cardTitle">Defaults (when fields are empty)</div>
-        <ul class="list">
-          <li><strong>Subject</strong>: from your config (`SUBJECT`)</li>
-          <li><strong>Body</strong>: default application template</li>
-          <li><strong>Resume</strong>: `assets/Shubham_Pawar_3Yr.pdf`</li>
-        </ul>
       </aside>
     </main>
 

@@ -1,5 +1,5 @@
 const puppeteer = require("puppeteer");
-
+const EmailExtractor = require("../utils/email-extractor");
 /**
  * Glassdoor Job Scraper
  * Scrapes jobs from Glassdoor with filters
@@ -182,7 +182,20 @@ class GlassdoorScraper {
 
         console.log(`[Glassdoor] Total jobs scraped: ${allJobs.length}`);
 
-        const jobsWithPlatform = allJobs.map(job => ({ ...job, platform: "glassdoor" }));
+        const jobsWithPlatform = allJobs.map(job => {
+            const textToParse = (job.description || "") + " " + (job.title || "") + " " + (job.company || "");
+            return {
+                ...job,
+                platform: "glassdoor",
+                extractedEmails: EmailExtractor.extractEmailsFromText(textToParse)
+            };
+        });
+
+        // Skip strict filtering when caller only wants emails (e.g. HR scraper)
+        if (this._skipFilter) {
+            console.log(`[Glassdoor] skipFilter=true, returning all ${jobsWithPlatform.length} jobs without keyword filter.`);
+            return jobsWithPlatform;
+        }
 
         // Apply strict client-side filtering
         const filteredJobs = this.filterStrictly(jobsWithPlatform, { keywords });

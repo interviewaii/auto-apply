@@ -30,6 +30,7 @@ const tabAts = $("#tabAts");
 const tabHr = $("#tabHr");
 const tabAuto = $("#tabAuto");
 const tabDefaults = $("#tabDefaults");
+const tabBulk = $("#tabBulk");
 const tabResumeBuilder = $("#tabResumeBuilder");
 
 const panelDashboard = $("#panelDashboard");
@@ -38,6 +39,7 @@ const panelAts = $("#panelAts");
 const panelHr = $("#panelHr");
 const panelAuto = $("#panelAuto");
 const panelDefaults = $("#panelDefaults");
+const panelBulk = $("#panelBulk");
 const panelResumeBuilder = $("#panelResumeBuilder");
 const panelSide = $("#panelSide");
 
@@ -304,6 +306,7 @@ function setTab(which) {
   const isHr = which === "hr";
   const isAuto = which === "auto";
   const isDefaults = which === "defaults";
+  const isBulk = which === "bulk";
   const isRb = which === "rb";
 
   tabDashboard?.classList.toggle("active", isDash);
@@ -312,18 +315,20 @@ function setTab(which) {
   tabHr?.classList.toggle("active", isHr);
   tabAuto?.classList.toggle("active", isAuto);
   tabDefaults?.classList.toggle("active", isDefaults);
+  tabBulk?.classList.toggle("active", isBulk);
   tabResumeBuilder?.classList.toggle("active", isRb);
 
   panelDashboard?.classList.toggle("hidden", !isDash);
   panelSend?.classList.toggle("hidden", !isSend);
+  panelBulk?.classList.toggle("hidden", !isBulk);
   panelAts?.classList.toggle("hidden", !isAts);
   panelHr?.classList.toggle("hidden", !isHr);
   panelAuto?.classList.toggle("hidden", !isAuto);
   panelDefaults?.classList.toggle("hidden", !isDefaults);
   if (panelResumeBuilder) panelResumeBuilder.style.display = isRb ? "block" : "none";
 
-  // Keep the right-side status visible for send; hide for other tabs to give space.
-  panelSide?.classList.toggle("hidden", !isSend);
+  // Keep the right-side status visible for Send and Bulk; hide for other tabs to give space.
+  panelSide?.classList.toggle("hidden", !(isSend || isBulk));
 
   if (isDash) loadDashboardStats();
 }
@@ -334,6 +339,7 @@ tabAts?.addEventListener("click", () => setTab("ats"));
 tabHr?.addEventListener("click", () => setTab("hr"));
 tabAuto?.addEventListener("click", () => setTab("auto"));
 tabDefaults?.addEventListener("click", () => setTab("defaults"));
+tabBulk?.addEventListener("click", () => setTab("bulk"));
 tabResumeBuilder?.addEventListener("click", () => setTab("rb"));
 
 // -------------------------
@@ -416,6 +422,7 @@ const defSmtpUser = $("#defSmtpUser");
 const defSmtpPass = $("#defSmtpPass");
 const defFromEmail = $("#defFromEmail");
 const defFromName = $("#defFromName");
+const defJobTitle = $("#defJobTitle");
 const defSubject = $("#defSubject");
 const defBody = $("#defBody");
 const defDob = $("#defDob");
@@ -449,6 +456,7 @@ async function loadDefaultsIntoUI() {
     defSmtpUser.value = s.smtpUser || "";
     defFromEmail.value = s.fromEmail || "";
     defFromName.value = s.fromName || "";
+    if (defJobTitle) defJobTitle.value = s.jobTitle || "";
     defSubject.value = s.subject || "";
     defBody.value = s.defaultBody || "";
     if (defDob) defDob.value = s.dateOfBirth || "";
@@ -459,12 +467,19 @@ async function loadDefaultsIntoUI() {
     if (defPreferredLocation) defPreferredLocation.value = s.preferredLocation || "";
     defSmtpPass.value = "";
 
-    // Also apply defaults into Send tab (only if user hasn't typed overrides).
-    if (subjectInput && !String(subjectInput.value || "").trim() && s.subject) {
-      subjectInput.value = String(s.subject || "");
+    // Update Sidebar Defaults Display
+    const sideDefSubject = $("#sideDefSubject");
+    const sideDefBody = $("#sideDefBody");
+    const sideDefResume = $("#sideDefResume");
+
+    if (sideDefSubject) {
+      sideDefSubject.innerHTML = `<strong>Subject</strong>: ${escapeHtml(s.subject || "(Using config default)")}`;
     }
-    if (bodyInput && !String(bodyInput.value || "").trim() && s.defaultBody) {
-      bodyInput.value = String(s.defaultBody || "");
+    if (sideDefBody) {
+      sideDefBody.innerHTML = `<strong>Body</strong>: ${s.defaultBody ? "Custom profile body" : "Default built-in template"}`;
+    }
+    if (sideDefResume) {
+      sideDefResume.innerHTML = `<strong>Resume</strong>: ${s.resumeSet ? "Your uploaded resume" : "(Using assets fallback)"}`;
     }
 
     // Check DB health too
@@ -492,6 +507,7 @@ defSaveBtn?.addEventListener("click", async () => {
       smtpPass: String(defSmtpPass?.value || ""),
       fromEmail: String(defFromEmail?.value || "").trim(),
       fromName: String(defFromName?.value || "").trim(),
+      jobTitle: String(defJobTitle?.value || "").trim(),
       subject: String(defSubject?.value || "").trim(),
       defaultBody: String(defBody?.value || "").trim(),
       dateOfBirth: String(defDob?.value || "").trim(),
@@ -1204,6 +1220,7 @@ const jobActionStatus = $("#jobActionStatus");
 const testCredentials = $("#testCredentials");
 const credentialTestStatus = $("#credentialTestStatus");
 const refreshJobsBtn = $("#refreshJobsBtn");
+const exportEmailsBtn = $("#exportEmailsBtn");
 const filterStatus = $("#filterStatus");
 const filterPlatform = $("#filterPlatform");
 const filterApplyType = $("#filterApplyType");
@@ -1552,6 +1569,7 @@ async function refreshJobsList() {
             <td style="padding:10px;font-size:12px">${escapeHtml(job.platform)}</td>
             <td style="padding:10px;font-size:12px">
               <a href="${escapeHtml(job.url)}" target="_blank" style="color:#0066cc;text-decoration:none">${escapeHtml(job.title)}</a>
+              ${job.extractedEmails && job.extractedEmails.length > 0 ? `<div style="margin-top:4px;font-size:11px;color:#10b981">📧 ${job.extractedEmails.map(e => escapeHtml(e)).join(', ')}</div>` : ''}
             </td>
             <td style="padding:10px;font-size:12px">${escapeHtml(job.company || "â€”")}</td>
             <td style="padding:10px;font-size:12px">${escapeHtml(job.location || "â€”")}</td>
@@ -1577,6 +1595,68 @@ async function refreshJobsList() {
 }
 
 refreshJobsBtn?.addEventListener("click", refreshJobsList);
+exportEmailsBtn?.addEventListener("click", async () => {
+  try {
+    const oldText = exportEmailsBtn.innerHTML;
+    exportEmailsBtn.disabled = true;
+    exportEmailsBtn.innerHTML = "⏳ Exporting...";
+
+    // Fetch all current jobs (with filters applied or just all pending)
+    const status = filterStatus?.value || "";
+    const platform = filterPlatform?.value || "";
+    const applyType = filterApplyType?.value || "";
+    const params = new URLSearchParams();
+    if (status) params.append("status", status);
+    if (platform) params.append("platform", platform);
+
+    const res = await fetch(`/api/jobs?${params.toString()}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || "Failed to fetch jobs");
+
+    let jobs = data.jobs || [];
+    let allEmails = [];
+    jobs.forEach(job => {
+      if (job.extractedEmails && job.extractedEmails.length > 0) {
+        allEmails.push(...job.extractedEmails);
+      }
+    });
+
+    allEmails = [...new Set(allEmails)]; // unique emails
+
+    if (allEmails.length === 0) {
+      toast("bad", "No Emails", "No extracted emails found to export.");
+      exportEmailsBtn.disabled = false;
+      exportEmailsBtn.innerHTML = oldText;
+      return;
+    }
+
+    const exportRes = await fetch("/api/export-emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails: allEmails })
+    });
+
+    if (!exportRes.ok) throw new Error("Export failed on server");
+
+    const blob = await exportRes.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "extracted-emails.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    toast("good", "Export Successful", `Exported ${allEmails.length} unique emails to Excel`);
+    exportEmailsBtn.disabled = false;
+    exportEmailsBtn.innerHTML = oldText;
+  } catch (e) {
+    toast("bad", "Export Failed", String(e?.message || e));
+    exportEmailsBtn.disabled = false;
+    exportEmailsBtn.innerHTML = "📥 Export Emails to Excel";
+  }
+});
 filterStatus?.addEventListener("change", refreshJobsList);
 filterPlatform?.addEventListener("change", refreshJobsList);
 filterApplyType?.addEventListener("change", refreshJobsList);
@@ -1911,3 +1991,168 @@ const rbGenerateDocxBtn = $("#rbGenerateDocxBtn");
 if (rbGenerateDocxBtn) {
   rbGenerateDocxBtn.addEventListener("click", () => generateResume("docx"));
 }
+
+// --- JOB BOARD EMAIL SCRAPER (HR Tab) ---
+const hrJobPlatform = $("#hrJobPlatform");
+const hrJobKeywords = $("#hrJobKeywords");
+const hrJobLocation = $("#hrJobLocation");
+const hrJobPages = $("#hrJobPages");
+const hrScrapeEmailsBtn = $("#hrScrapeEmailsBtn");
+const hrExportScrapedBtn = $("#hrExportScrapedBtn");
+const hrScrapeStatus = $("#hrScrapeStatus");
+const hrScrapeResultsTableWrap = $("#hrScrapeResultsTableWrap");
+const hrScrapeResultsBody = $("#hrScrapeResultsBody");
+
+let lastScrapedEmails = [];
+
+hrScrapeEmailsBtn?.addEventListener("click", () => {
+  const platform = hrJobPlatform?.value || "linkedin";
+  const keywords = hrJobKeywords?.value?.trim();
+  const location = hrJobLocation?.value?.trim() || "";
+  const maxPages = parseInt(hrJobPages?.value || "1", 10);
+
+  if (!keywords) {
+    toast("bad", "Missing Keywords", "Please enter keywords to search.");
+    return;
+  }
+
+  // Reset UI
+  hrScrapeEmailsBtn.disabled = true;
+  hrScrapeEmailsBtn.innerHTML = "⏳ Extracting...";
+  if (hrExportScrapedBtn) hrExportScrapedBtn.classList.add("hidden");
+  if (hrScrapeResultsTableWrap) hrScrapeResultsTableWrap.style.display = "none";
+  if (hrScrapeResultsBody) hrScrapeResultsBody.innerHTML = "";
+  if (hrScrapeStatus) {
+    hrScrapeStatus.className = "status empty";
+    hrScrapeStatus.innerHTML = `🔍 Connecting to <strong>${escapeHtml(platform)}</strong>...`;
+  }
+  lastScrapedEmails = [];
+
+  const params = new URLSearchParams({ platform, keywords, location, maxPages: String(maxPages) });
+  const es = new EventSource(`/api/scrape-emails-stream?${params.toString()}`);
+
+  let totalJobs = 0;
+  let doneCount = 0;
+  let emailCount = 0;
+
+  es.onmessage = (event) => {
+    let msg;
+    try { msg = JSON.parse(event.data); } catch { return; }
+
+    if (msg.type === "status") {
+      if (msg.totalJobs) totalJobs = msg.totalJobs;
+      if (hrScrapeStatus) {
+        hrScrapeStatus.className = "status empty";
+        hrScrapeStatus.innerHTML = `⏳ ${escapeHtml(msg.message || "")} ${totalJobs ? `<span style="float:right;font-weight:600">0 / ${totalJobs} checked</span>` : ""}`;
+      }
+      if (hrScrapeResultsTableWrap && totalJobs) hrScrapeResultsTableWrap.style.display = "block";
+    }
+
+    if (msg.type === "progress" || msg.type === "result") {
+      doneCount = msg.done || doneCount + 1;
+      if (totalJobs && hrScrapeStatus) {
+        const pct = Math.round((doneCount / totalJobs) * 100);
+        hrScrapeStatus.innerHTML = `⏳ Extracting emails... <span style="float:right;font-weight:600">${doneCount} / ${totalJobs} checked &nbsp;(${pct}%)</span>`;
+      }
+    }
+
+    if (msg.type === "result") {
+      const job = msg.job;
+      emailCount++;
+      const emailsHtml = job.extractedEmails.map(e => {
+        lastScrapedEmails.push(e);
+        return `<code style="display:inline-block;margin:2px 4px 2px 0;background:rgba(16,185,129,0.1);color:#10b981;padding:2px 6px;border-radius:4px;">${escapeHtml(e)}</code>`;
+      }).join("");
+
+      const tr = document.createElement("tr");
+      tr.style.borderBottom = "1px solid #eee";
+      tr.innerHTML = `
+        <td style="padding:10px;font-size:13px;font-weight:600">${escapeHtml(job.company || "Unknown")}</td>
+        <td style="padding:10px;font-size:13px"><a href="${escapeHtml(job.url || "#")}" target="_blank" style="color:#0066cc;text-decoration:none">${escapeHtml(job.title || "No Title")}</a></td>
+        <td style="padding:10px;font-size:13px">${emailsHtml}</td>
+        <td style="padding:10px;font-size:13px"><a href="${escapeHtml(job.url || "#")}" target="_blank" style="color:#60a5fa">Link</a></td>
+      `;
+      if (hrScrapeResultsBody) hrScrapeResultsBody.appendChild(tr);
+      if (hrScrapeResultsTableWrap) hrScrapeResultsTableWrap.style.display = "block";
+
+      if (hrExportScrapedBtn) hrExportScrapedBtn.classList.remove("hidden");
+    }
+
+    if (msg.type === "done") {
+      es.close();
+      lastScrapedEmails = [...new Set(lastScrapedEmails)];
+
+      if (hrScrapeStatus) {
+        if (emailCount === 0) {
+          hrScrapeStatus.className = "status empty";
+          hrScrapeStatus.innerHTML = `Scanned ${msg.totalScraped} jobs — <strong>no emails</strong> found. Try a different keyword or platform.`;
+        } else {
+          hrScrapeStatus.className = "status good";
+          hrScrapeStatus.innerHTML = `✅ Done! Found <strong>${lastScrapedEmails.length} unique emails</strong> from ${emailCount} jobs (out of ${msg.totalScraped} scraped).`;
+        }
+      }
+      hrScrapeEmailsBtn.disabled = false;
+      hrScrapeEmailsBtn.innerHTML = "🔍 Extract Emails";
+      if (emailCount > 0) toast("good", "Extraction Complete", `Found ${lastScrapedEmails.length} unique emails`);
+    }
+
+    if (msg.type === "error") {
+      es.close();
+      if (hrScrapeStatus) {
+        hrScrapeStatus.className = "status bad";
+        hrScrapeStatus.innerHTML = `<strong>Error:</strong> ${escapeHtml(msg.error || "Unknown error")}`;
+      }
+      toast("bad", "Extraction Failed", msg.error || "Unknown error");
+      hrScrapeEmailsBtn.disabled = false;
+      hrScrapeEmailsBtn.innerHTML = "🔍 Extract Emails";
+    }
+  };
+
+  es.onerror = () => {
+    es.close();
+    if (hrScrapeStatus) {
+      hrScrapeStatus.className = "status bad";
+      hrScrapeStatus.innerHTML = `<strong>Connection lost.</strong> Server may still be processing. Refresh and try again.`;
+    }
+    hrScrapeEmailsBtn.disabled = false;
+    hrScrapeEmailsBtn.innerHTML = "🔍 Extract Emails";
+  };
+});
+
+hrExportScrapedBtn?.addEventListener("click", async () => {
+  if (!lastScrapedEmails || lastScrapedEmails.length === 0) {
+    toast("bad", "No Emails", "No emails to export.");
+    return;
+  }
+
+  const oldText = hrExportScrapedBtn.innerHTML;
+  hrExportScrapedBtn.disabled = true;
+  hrExportScrapedBtn.innerHTML = "⏳ Exporting...";
+
+  try {
+    const exportRes = await fetch("/api/export-emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails: lastScrapedEmails })
+    });
+
+    if (!exportRes.ok) throw new Error("Export failed on server");
+
+    const blob = await exportRes.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "job-board-emails.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    toast("good", "Export Successful", `Exported ${lastScrapedEmails.length} unique emails to Excel`);
+  } catch (e) {
+    toast("bad", "Export Failed", String(e?.message || e));
+  } finally {
+    hrExportScrapedBtn.disabled = false;
+    hrExportScrapedBtn.innerHTML = oldText;
+  }
+});

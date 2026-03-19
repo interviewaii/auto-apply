@@ -900,6 +900,7 @@ async function getEffectiveSettings(username) {
     expectedCtc: String(p.expectedCtc || "").trim(),
     currentLocation: String(p.currentLocation || "").trim(),
     preferredLocation: String(p.preferredLocation || "").trim(),
+    jobTitle: String(p.jobTitle || "").trim(),
     resumePath: fs.existsSync(p.resumePath) ? p.resumePath : config.paths.resumePath,
 
     // Meta
@@ -941,6 +942,7 @@ app.get("/api/settings", async (req, res) => {
       expectedCtc: String(p.expectedCtc || ""),
       currentLocation: String(p.currentLocation || ""),
       preferredLocation: String(p.preferredLocation || ""),
+      jobTitle: String(p.jobTitle || ""),
 
       // Naukri (only return username, not password)
       naukriUsername: String(n.username || ""),
@@ -963,6 +965,7 @@ app.post("/api/settings", async (req, res) => {
       fromEmail, fromName,
       subject, defaultBody,
       dateOfBirth, totalExperience, noticePeriod, expectedCtc, currentLocation, preferredLocation,
+      jobTitle,
       naukriUsername, naukriPassword
     } = req.body;
 
@@ -1005,6 +1008,7 @@ app.post("/api/settings", async (req, res) => {
       expectedCtc: expectedCtc !== undefined ? expectedCtc : currentProfile.expectedCtc,
       currentLocation: currentLocation !== undefined ? currentLocation : currentProfile.currentLocation,
       preferredLocation: preferredLocation !== undefined ? preferredLocation : currentProfile.preferredLocation,
+      jobTitle: jobTitle !== undefined ? jobTitle : currentProfile.jobTitle,
     };
     await userManager.updateUserProfile(username, newProfile);
 
@@ -1099,22 +1103,26 @@ function bodyToHtml(bodyText) {
   )}</div>`;
 }
 
-function buildOverriddenEmail({ recipientName, recipientEmail, bodyText }) {
+function buildOverriddenEmail({ recipientName, recipientEmail, bodyText, fromName, jobTitle }) {
   const rawName = String(recipientName || "").trim();
   const firstName = rawName.replace(/[(),]/g, " ").trim().split(/\s+/)[0] || "";
   const greetingName = firstName || rawName || "Hiring Team";
 
   const rawBody = String(bodyText || "").trim();
+  const senderName = fromName || "Shubham Pawar";
+  const senderTitle = jobTitle || "MERN Stack Developer | Software Engineer";
+
   const bodyHasSignature = (() => {
     if (!rawBody) return false;
     const b = rawBody.toLowerCase();
-    return /warm\s+regards/.test(b) || /regards\s*,/.test(b) || /shubham\s+pawar/.test(b);
+    // Check for "Warm regards" or sender name
+    return /warm\s+regards/.test(b) || /regards\s*,/.test(b) || (senderName && b.includes(senderName.toLowerCase()));
   })();
 
   const signatureText = [
     "Warm regards,",
-    "Shubham Pawar",
-    "MERN Stack Developer | Software Engineer",
+    senderName,
+    senderTitle,
     "Immediate Joiner",
   ].join("\n");
 
@@ -1130,8 +1138,8 @@ function buildOverriddenEmail({ recipientName, recipientEmail, bodyText }) {
       ? ""
       : `<p>
             Warm regards,<br />
-            Shubham Pawar<br />
-            MERN Stack Developer | Software Engineer<br />
+            ${escapeHtml(senderName)}<br />
+            ${escapeHtml(senderTitle)}<br />
             Immediate Joiner
           </p>`
     }
@@ -1951,28 +1959,109 @@ app.get("/template.xlsx", (_req, res) => {
   res.send(buf);
 });
 
-// Download sent email log (Excel)
-app.get("/api/sent.xlsx", (_req, res) => {
-  console.log("[ui] sent log download: /api/sent.xlsx");
-  const buf = getSentWorkbookBuffer(config.paths.sentXlsx);
-  res.setHeader(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  );
-  res.setHeader("Content-Disposition", 'attachment; filename="job-mailer-sent.xlsx"');
-  res.send(buf);
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-user sent log download (authenticated — only see YOUR own emails)
+// ─────────────────────────────────────────────────────────────────────────────
+app.get("/api/user/sent.xlsx", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const username = req.session.username;
+    const logs = await ApplicationLog.find({ userId, type: "email" })
+      .sort({ timestamp: -1 })
+      .lean();
+
+    const header = [["Date", "Recipient Email", "Subject", "Status", "Opened", "Opened At"]];
+    const rows = logs.map(l => [
+      l.timestamp ? new Date(l.timestamp).toLocaleString("en-IN") : "",
+      l.recipientEmail || "",
+      l.subject || "",
+      l.status || "",
+      l.opened ? "Yes" : "No",
+      l.openedAt ? new Date(l.openedAt).toLocaleString("en-IN") : "",
+    ]);
+    const aoa = header.concat(rows);
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "sent");
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="sent-log-${username}.xlsx"`);
+    res.send(buf);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
-// Alias (in case you prefer a shorter URL)
-app.get("/sent.xlsx", (_req, res) => {
-  console.log("[ui] sent log download: /sent.xlsx");
-  const buf = getSentWorkbookBuffer(config.paths.sentXlsx);
-  res.setHeader(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  );
-  res.setHeader("Content-Disposition", 'attachment; filename="job-mailer-sent.xlsx"');
-  res.send(buf);
+// Legacy aliases — redirect to per-user endpoint (requires login now)
+app.get("/api/sent.xlsx", requireAuth, (req, res) => res.redirect("/api/user/sent.xlsx"));
+app.get("/sent.xlsx", requireAuth, (req, res) => res.redirect("/api/user/sent.xlsx"));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin: Download ALL users' sent logs as one combined XLSX
+// ─────────────────────────────────────────────────────────────────────────────
+app.get("/api/admin/sent-logs", requireAdmin, async (req, res) => {
+  try {
+    const logs = await ApplicationLog.find({ type: "email" })
+      .sort({ timestamp: -1 })
+      .populate("userId", "username")
+      .lean();
+
+    const header = [["Username", "Date", "Recipient Email", "Subject", "Status", "Opened", "Opened At"]];
+    const rows = logs.map(l => [
+      l.userId?.username || "(deleted)",
+      l.timestamp ? new Date(l.timestamp).toLocaleString("en-IN") : "",
+      l.recipientEmail || "",
+      l.subject || "",
+      l.status || "",
+      l.opened ? "Yes" : "No",
+      l.openedAt ? new Date(l.openedAt).toLocaleString("en-IN") : "",
+    ]);
+    const aoa = header.concat(rows);
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "all-sent-logs");
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="all-users-sent-logs.xlsx"`);
+    res.send(buf);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin: Download ONE user's sent log
+// ─────────────────────────────────────────────────────────────────────────────
+app.get("/api/admin/sent-logs/:username", requireAdmin, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await userManager.getUser(username);
+    if (!user) return res.status(404).json({ ok: false, error: "User not found" });
+
+    const logs = await ApplicationLog.find({ userId: user._id, type: "email" })
+      .sort({ timestamp: -1 })
+      .lean();
+
+    const header = [["Date", "Recipient Email", "Subject", "Status", "Opened", "Opened At"]];
+    const rows = logs.map(l => [
+      l.timestamp ? new Date(l.timestamp).toLocaleString("en-IN") : "",
+      l.recipientEmail || "",
+      l.subject || "",
+      l.status || "",
+      l.opened ? "Yes" : "No",
+      l.openedAt ? new Date(l.openedAt).toLocaleString("en-IN") : "",
+    ]);
+    const aoa = header.concat(rows);
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "sent");
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="sent-log-${username}.xlsx"`);
+    res.send(buf);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 app.post("/api/send", upload.single("resume"), async (req, res) => {
@@ -1998,6 +2087,8 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
       recipientName: toName,
       recipientEmail: toEmail,
       bodyText: bodyToUse,
+      fromName: eff.from.name,
+      jobTitle: eff.jobTitle,
     });
     text = overridden.text;
     html = overridden.html;
@@ -2006,10 +2097,14 @@ app.post("/api/send", upload.single("resume"), async (req, res) => {
       recipientName: toName,
       recipientEmail: toEmail,
       subject,
+      defaultBody: eff.defaultBody,
+      fromName: eff.from.name,
+      jobTitle: eff.jobTitle,
     });
     text = built.text;
     html = built.html;
   }
+  console.log(`[send] Routing Choice: Subject="${subject}" | BodySource=${bodyOverride ? "UI Override" : "MongoDB Default"} | ResumePath="${resumePath}"`);
 
   const resumePath = req.file?.path ? req.file.path : eff.resumePath;
 
@@ -2207,6 +2302,8 @@ app.post(
           recipientName: r.name,
           recipientEmail: r.email,
           bodyText: bodyOverride,
+          fromName: eff.from.name,
+          jobTitle: eff.jobTitle,
         });
         text = overridden.text;
         html = overridden.html;
@@ -2215,15 +2312,27 @@ app.post(
           recipientName: r.name,
           recipientEmail: r.email,
           subject,
+          defaultBody: eff.defaultBody,
+          fromName: eff.from.name,
+          jobTitle: eff.jobTitle,
         });
         text = built.text;
         html = built.html;
       }
+      console.log(`[bulk] Row -> ${r.email} | Subject="${subject}" | ResumePath="${resumePath}"`);
 
       try {
         console.log(`[ui] bulk sending -> ${r.email}`);
         const trackingId = crypto.randomBytes(16).toString("hex");
         const trackingBaseUrl = req.protocol + '://' + req.get('host');
+
+        const attachments = [];
+        if (resumePath && fs.existsSync(resumePath)) {
+          attachments.push({
+            filename: resumeFile?.originalname || path.basename(resumePath),
+            path: resumePath,
+          });
+        }
 
         const info = await transporter.sendMail({
           from: eff.from.name ? `"${eff.from.name}" <${eff.from.email}>` : eff.from.email,
@@ -2231,12 +2340,7 @@ app.post(
           subject,
           text,
           html,
-          attachments: [
-            {
-              filename: resumeFile?.originalname || path.basename(resumePath),
-              path: resumePath,
-            },
-          ],
+          attachments,
           trackingId,
           trackingBaseUrl,
         });
@@ -2329,6 +2433,8 @@ app.post("/api/send-list", upload.single("resume"), async (req, res) => {
         recipientName: "",
         recipientEmail: email,
         bodyText: bodyOverride,
+        fromName: eff.from.name,
+        jobTitle: eff.jobTitle,
       });
       text = overridden.text;
       html = overridden.html;
@@ -2337,14 +2443,26 @@ app.post("/api/send-list", upload.single("resume"), async (req, res) => {
         recipientName: "",
         recipientEmail: email,
         subject,
+        defaultBody: eff.defaultBody,
+        fromName: eff.from.name,
+        jobTitle: eff.jobTitle,
       });
       text = built.text;
       html = built.html;
     }
+    console.log(`[list] Row -> ${email} | Subject="${subject}" | ResumePath="${resumePath}"`);
     try {
       console.log(`[ui] list sending -> ${email}`);
       const trackingId = crypto.randomBytes(16).toString("hex");
       const trackingBaseUrl = req.protocol + '://' + req.get('host');
+
+      const attachments = [];
+      if (resumePath && fs.existsSync(resumePath)) {
+        attachments.push({
+          filename: req.file?.originalname || path.basename(resumePath),
+          path: resumePath,
+        });
+      }
 
       const info = await transporter.sendMail({
         from: eff.from.name ? `"${eff.from.name}" <${eff.from.email}>` : eff.from.email,
@@ -2352,12 +2470,7 @@ app.post("/api/send-list", upload.single("resume"), async (req, res) => {
         subject,
         text,
         html,
-        attachments: [
-          {
-            filename: req.file?.originalname || path.basename(resumePath),
-            path: resumePath,
-          },
-        ],
+        attachments,
         trackingId,
         trackingBaseUrl,
       });
@@ -2423,7 +2536,9 @@ const jobStorage = require("./job-storage");
 const NaukriScraper = require("./scrapers/naukri-scraper");
 const GlassdoorScraper = require("./scrapers/glassdoor-scraper");
 const IndeedScraper = require("./scrapers/indeed-scraper");
+const LinkedInScraper = require("./scrapers/linkedin-scraper");
 const NaukriApplier = require("./appliers/naukri-applier");
+const { deepExtractEmails } = require("./utils/job-email-extractor");
 
 // Global lock to prevent multiple scrapers from running at once (RAM safety on Render)
 let IS_SCRAPER_RUNNING = false;
@@ -2712,6 +2827,16 @@ app.post("/api/jobs/scrape", async (req, res) => {
         postedWithin: searchCriteria.postedWithin || 1,
         maxPages: 5,
       });
+    } else if (platform === "linkedin") {
+      scraper = new LinkedInScraper({
+        headless,
+        userId: user._id
+      });
+      jobs = await scraper.scrapeJobs({
+        keywords: searchCriteria.keywords,
+        location: searchCriteria.location,
+        maxPages: 3,
+      });
       await scraper.close();
     }
     else {
@@ -2735,7 +2860,121 @@ app.post("/api/jobs/scrape", async (req, res) => {
   }
 });
 
-// Clear all jobs
+// Extract emails only — streaming SSE endpoint (results appear live in the UI)
+app.get("/api/scrape-emails-stream", async (req, res) => {
+  if (IS_SCRAPER_RUNNING) {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.write(`data: ${JSON.stringify({ type: "error", error: "A scraping job is already running." })}\n\n`);
+    return res.end();
+  }
+
+  const { platform, keywords, location, maxPages } = req.query;
+  if (!platform || !keywords) {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.write(`data: ${JSON.stringify({ type: "error", error: "Missing platform or keywords." })}\n\n`);
+    return res.end();
+  }
+
+  // Setup SSE headers
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const send = (obj) => {
+    if (!res.writableEnded) res.write(`data: ${JSON.stringify(obj)}\n\n`);
+  };
+
+  // Keepalive ping every 20s to prevent Render/proxies from closing idle SSE connections
+  const keepalive = setInterval(() => {
+    if (!res.writableEnded) res.write(`: ping\n\n`);
+  }, 20000);
+
+  IS_SCRAPER_RUNNING = true;
+  let scraper;
+
+  try {
+    const username = req.session.username;
+    let userId = "guest";
+    try {
+      const user = await userManager.getUserFull(username);
+      if (user) userId = user._id;
+    } catch (e) { }
+
+    const criteria = { keywords, location: location || "", maxPages: parseInt(maxPages || "1", 10), strictMatch: false };
+    const headless = true;
+    let jobs = [];
+
+    send({ type: "status", message: `Scraping ${platform} for jobs...` });
+
+    if (platform === "naukri") {
+      scraper = new NaukriScraper({ headless, userId });
+      scraper._skipFilter = true;
+      jobs = await scraper.scrapeJobs(criteria);
+      await scraper.close();
+    } else if (platform === "glassdoor") {
+      scraper = new GlassdoorScraper({ headless, userId });
+      scraper._skipFilter = true;
+      jobs = await scraper.scrapeJobs(criteria);
+      await scraper.close();
+    } else if (platform === "indeed") {
+      scraper = new IndeedScraper({ headless, userId });
+      jobs = await scraper.scrapeJobs(criteria);
+      await scraper.close();
+    } else if (platform === "linkedin") {
+      scraper = new LinkedInScraper({ headless, userId });
+      jobs = await scraper.scrapeJobs({ keywords, location: location || "", maxPages: parseInt(maxPages || "1", 10) });
+      await scraper.close();
+    } else {
+      send({ type: "error", error: "Invalid platform" });
+      return res.end();
+    }
+
+    // Reduce concurrency on Render (low RAM), use 5 locally
+    const concurrency = process.env.RENDER ? 2 : 5;
+    send({ type: "status", message: `Found ${jobs.length} jobs. Extracting emails now (${concurrency} at a time)...`, totalJobs: jobs.length });
+
+    let withEmails = 0;
+    await deepExtractEmails(jobs, {
+      concurrency,
+      onResult: (job, done, total) => {
+        const hasEmails = job.extractedEmails && job.extractedEmails.length > 0;
+        if (hasEmails) {
+          withEmails++;
+          send({
+            type: "result",
+            job: {
+              company: job.company || "Unknown",
+              title: job.title || "No Title",
+              url: job.url || "",
+              extractedEmails: [...new Set(job.extractedEmails)]
+            },
+            done,
+            total
+          });
+        } else {
+          // Send progress even when no email found (so UI can update counter)
+          send({ type: "progress", done, total });
+        }
+      }
+    });
+
+    send({ type: "done", totalScraped: jobs.length, withEmails });
+  } catch (e) {
+    console.error("[scrape-emails-stream] Error:", e);
+    send({ type: "error", error: String(e?.message || e) });
+  } finally {
+    clearInterval(keepalive);
+    IS_SCRAPER_RUNNING = false;
+    res.end();
+  }
+});
+
+// Keep old POST endpoint for backwards compatibility (non-streaming)
+app.post("/api/scrape-emails-only", async (req, res) => {
+  return res.status(410).json({ ok: false, error: "This endpoint has moved to SSE streaming. Use GET /api/scrape-emails-stream" });
+});
+
 // Clear all jobs
 app.post("/api/jobs/clear", async (req, res) => {
   try {
@@ -2745,6 +2984,38 @@ app.post("/api/jobs/clear", async (req, res) => {
     return res.json({ ok: true, message: "All jobs cleared", total: result.total });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+// Export Extracted Emails to Excel for Bulk Sending
+app.post("/api/export-emails", async (req, res) => {
+  try {
+    const { emails } = req.body;
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ ok: false, error: "No emails provided" });
+    }
+
+    const xlsx = require("xlsx");
+
+    // Target format for bulk sender: email, name, subject, body
+    const data = emails.map(email => ({
+      email: email,
+      "recipient name": "Hiring Team",
+      subject: "",
+      body: ""
+    }));
+
+    const ws = xlsx.utils.json_to_sheet(data);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Extracted Emails");
+
+    const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+
+    res.setHeader("Content-Disposition", "attachment; filename=extracted-emails.xlsx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buffer);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
   }
 });
 

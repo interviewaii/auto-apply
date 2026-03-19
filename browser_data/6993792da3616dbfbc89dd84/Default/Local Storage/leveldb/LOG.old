@@ -1,3 +1,5 @@
-2026/02/27-02:51:47.078 19e4 Reusing MANIFEST F:\JobReach-main\JobReach-main\browser_data\6993792da3616dbfbc89dd84\Default\Local Storage\leveldb/MANIFEST-000001
-2026/02/27-02:51:47.962 19e4 Recovering log #4
-2026/02/27-02:51:48.022 19e4 Reusing old log F:\JobReach-main\JobReach-main\browser_data\6993792da3616dbfbc89dd84\Default\Local Storage\leveldb/000004.log 
+2026/03/19-01:57:00.075 27c0 Reusing MANIFEST F:\JobReach-main\JobReach-main\browser_data\6993792da3616dbfbc89dd84\Default\Local Storage\leveldb/MANIFEST-000001
+2026/03/19-01:57:00.095 27c0 Recovering log #7
+2026/03/19-01:57:00.100 27c0 Level-0 table #9: started
+2026/03/19-01:57:00.120 27c0 Level-0 table #9: 21740 bytes OK
+2026/03/19-01:57:00.136 27c0 Delete type=0 #7

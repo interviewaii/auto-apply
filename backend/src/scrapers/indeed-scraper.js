@@ -1,5 +1,5 @@
 const puppeteer = require("puppeteer");
-
+const EmailExtractor = require("../utils/email-extractor");
 /**
  * Indeed Job Scraper
  */
@@ -139,7 +139,7 @@ class IndeedScraper {
         return jobs;
     }
 
-    async scrapeJobs({ keywords, location, remote = true, postedWithin = 1, maxPages = 5 }) {
+    async scrapeJobs({ keywords, location, remote = true, postedWithin = 1, maxPages = 5, strictMatch = true }) {
         await this.init();
 
         const searchUrl = this.buildSearchUrl({ keywords, location, remote, postedWithin });
@@ -181,7 +181,20 @@ class IndeedScraper {
 
         console.log(`[Indeed] Total jobs scraped: ${allJobs.length}`);
 
-        const jobsWithPlatform = allJobs.map(job => ({ ...job, platform: "indeed" }));
+        const jobsWithPlatform = allJobs.map(job => {
+            const textToParse = (job.description || "") + " " + (job.title || "") + " " + (job.company || "");
+            return {
+                ...job,
+                platform: "indeed",
+                extractedEmails: EmailExtractor.extractEmailsFromText(textToParse)
+            };
+        });
+
+        // Skip strict filtering when caller only wants emails (e.g. HR scraper)
+        if (!strictMatch) {
+            console.log(`[Indeed] strictMatch=false, returning all ${jobsWithPlatform.length} jobs without keyword filter.`);
+            return jobsWithPlatform;
+        }
 
         // Apply strict client-side filtering
         const filteredJobs = this.filterStrictly(jobsWithPlatform, { keywords });

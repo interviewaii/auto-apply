@@ -40,20 +40,25 @@ function firstNameOnly(fullName) {
   return first || name;
 }
 
-function buildEmail({ recipientName, recipientEmail, subject }) {
+function buildEmail({ recipientName, recipientEmail, subject, defaultBody, fromName, jobTitle }) {
   const name = String(recipientName || "").trim();
   const greetingName = firstNameOnly(name) || guessGreetingFromEmail(recipientEmail);
 
-  const defaultBody = loadDefaultBodyFromUiSettings();
+  // Use passed defaultBody (from MongoDB) or fallback to legacy ui-settings.json
+  const bodyToUse = defaultBody !== undefined ? defaultBody : loadDefaultBodyFromUiSettings();
+
+  const senderName = fromName || "Shubham Pawar";
+  const senderTitle = jobTitle || "MERN Stack Developer | Software Engineer";
+
   const signatureText = [
     "Warm regards,",
-    "Shubham Pawar",
-    "MERN Stack Developer | Software Engineer",
+    senderName,
+    senderTitle,
     "Immediate Joiner",
   ].join("\n");
 
-  const shouldAddSignature = !bodyAlreadyHasSignature(defaultBody);
-  const textParts = [`Hi ${greetingName},`, "", defaultBody];
+  const shouldAddSignature = !bodyAlreadyHasSignature(bodyToUse);
+  const textParts = [`Hi ${greetingName},`, "", bodyToUse];
   if (shouldAddSignature) textParts.push("", signatureText, "");
   else textParts.push("");
   const text = textParts.join("\n").trim() + "\n";
@@ -61,15 +66,15 @@ function buildEmail({ recipientName, recipientEmail, subject }) {
   const signatureHtml = `
     <p>
       Warm regards,<br />
-      Shubham Pawar<br />
-      MERN Stack Developer | Software Engineer<br />
+      ${escapeHtml(senderName)}<br />
+      ${escapeHtml(senderTitle)}<br />
       Immediate Joiner
     </p>
   `.trim();
 
   const html = `
     <p>Hi ${escapeHtml(greetingName)},</p>
-    <p>${bodyToHtml(defaultBody)}</p>
+    <p>${bodyToHtml(bodyToUse)}</p>
     ${shouldAddSignature ? signatureHtml : ""}
   `.trim();
 

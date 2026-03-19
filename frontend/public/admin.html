@@ -424,6 +424,11 @@
         <div class="stat-label">Banned Users</div>
         <div class="stat-value red" id="statBanned">—</div>
       </div>
+      <div class="stat-card" style="cursor:pointer" title="Download all users' sent emails as Excel">
+        <div class="stat-label">📊 All Sent Logs</div>
+        <a href="/api/admin/sent-logs" class="stat-value yellow" style="text-decoration:none;display:block">⬇️
+          Download</a>
+      </div>
     </div>
 
     <!-- Users Table -->
@@ -441,12 +446,13 @@
               <th>Created</th>
               <th>Usage (Day)</th>
               <th>Limits (Day)</th>
+              <th>Sent Log</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody id="usersTableBody">
             <tr>
-              <td colspan="7" class="loading">
+              <td colspan="8" class="loading">
                 <div class="spinner"></div><br>Loading users…
               </td>
             </tr>
@@ -526,14 +532,14 @@
     // --- Load Users ---
     async function loadUsers() {
       try {
-        tbody.innerHTML = `<tr><td colspan="7" class="loading"><div class="spinner"></div><br>Loading…</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="loading"><div class="spinner"></div><br>Loading…</td></tr>`;
         const { res, data } = await apiFetch("/api/admin/users");
         if (!res.ok || !data.ok) throw new Error(data.error || "Failed to load users");
         allUsers = data.users || [];
         renderStats();
         renderTable();
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:20px">${esc(e.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:20px">${esc(e.message)}</td></tr>`;
       }
     }
 
@@ -548,7 +554,7 @@
 
     function renderTable() {
       if (!allUsers.length) {
-        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--muted);padding:20px;text-align:center">No users registered yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="color:var(--muted);padding:20px;text-align:center">No users registered yet.</td></tr>`;
         return;
       }
 
@@ -572,6 +578,9 @@
           </td>
           <td>
             <span style="font-size:12px">📧 ${limits.dailyEmails || 50} / 📄 ${limits.dailyResumes || 10}</span>
+          </td>
+          <td>
+            <a href="/api/admin/sent-logs/${encodeURIComponent(u.username)}" class="btn btn-secondary btn-sm" style="text-decoration:none" title="Download ${esc(u.username)}'s sent log">⬇️ Excel</a>
           </td>
           <td>
             <div class="action-group">
